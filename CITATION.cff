@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite using this metadata."
+title: "vsp-otel — Verifiable Span Protocol: cryptographically-verifiable OpenTelemetry GenAI bridge"
+abstract: >-
+  TypeScript library and ouroboros runtime extension that emits OpenTelemetry GenAI Semantic Conventions
+  v1.37 spans from every Λ-gate evaluation, with the receipt hash embedded as the OTel trace_id and the
+  complete 9-axis Λ-vector as span attributes. Part of the SZL Holdings governed AI decision infrastructure.
+type: software
+authors:
+  - family-names: Lutar
+    given-names: Stephen
+    name-particle: P.
+    affiliation: SZL Holdings
+    orcid: "https://orcid.org/0009-0001-0110-4173"
+license: Apache-2.0
+url: "https://github.com/szl-holdings/vsp-otel"
+repository-code: "https://github.com/szl-holdings/vsp-otel"
+keywords:
+  - szl-holdings
+  - opentelemetry
+  - ai-governance
+  - verifiable-ai
+  - receipt-cryptography
+  - otel-semconv
+  - lambda-gate
+  - ouroboros
+date-released: "2026-05-15"
