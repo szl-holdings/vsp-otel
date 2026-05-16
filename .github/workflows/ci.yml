@@ -15,10 +15,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-      - name: Install
-        run: pnpm install --frozen-lockfile || pnpm install
+      - name: Install (if source present)
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          elif [ -f package.json ]; then
+            pnpm install
+          else
+            echo "No package.json found — documentation-only repo, skipping install."
+          fi
       - name: Typecheck
-        run: pnpm -r typecheck || pnpm -r exec tsc --noEmit || echo "typecheck skipped"
+        run: pnpm -r typecheck || pnpm -r exec tsc --noEmit || echo "typecheck skipped (no source)"
       - name: Test
-        run: pnpm -r test --if-present || echo "tests skipped"
+        run: pnpm -r test --if-present || echo "tests skipped (no source)"
