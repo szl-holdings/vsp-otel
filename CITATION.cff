@@ -8,8 +8,8 @@ abstract: >-
 type: software
 authors:
   - family-names: Lutar
-    given-names: Stephen
-    name-particle: P.
+    given-names: "Stephen P."
+    email: stephen@szlholdings.com
     affiliation: SZL Holdings
     orcid: "https://orcid.org/0009-0001-0110-4173"
 license: Apache-2.0
