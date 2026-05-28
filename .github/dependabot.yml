@@ -1,6 +1,5 @@
-# Per-repo Dependabot config. Org-wide GitHub Actions weekly updates
-# already come from szl-holdings/.github; this file is here so per-repo
-# overrides (e.g. ecosystem-specific) can be added in the future.
+# Per-repo Dependabot config for vsp-otel.
+# Tracks GitHub Actions (root) + npm (runtime/).
 
 version: 2
 updates:
@@ -9,12 +8,34 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "06:00"
+      time: "09:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 10
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
     labels:
       - "dependencies"
       - "github-actions"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "npm"
+    directory: "/runtime"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      development-dependencies:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
