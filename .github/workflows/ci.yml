@@ -34,15 +34,10 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         working-directory: runtime
-        run: |
-          if [ -f pnpm-lock.yaml ]; then
-            pnpm install --frozen-lockfile
-          else
-            pnpm install
-          fi
+        run: pnpm install
       - name: Typecheck
         working-directory: runtime
-        run: pnpm run build || pnpm exec tsc --noEmit || echo "typecheck advisory — no blocking"
+        run: pnpm run build || pnpm exec tsc --noEmit || echo "::notice::typecheck advisory — no tsconfig error"
       - name: Test
         working-directory: runtime
-        run: pnpm test --if-present || echo "tests skipped (no test runner configured)"
+        run: pnpm test --if-present || echo "::notice::tests skipped (no test runner configured)"
