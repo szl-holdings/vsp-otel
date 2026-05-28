@@ -3,12 +3,15 @@
 > OpenTelemetry exporter for SZL audit fibers and Λ-axis spans — governance observability as a measurable, receipt-attested signal.
 
 [![CI](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml)
+[![OpenTelemetry exporter](https://img.shields.io/badge/OTEL-exporter-805AD5?style=flat-square)](https://github.com/szl-holdings/vsp-otel)
 [![CodeQL](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/szl-holdings/vsp-otel/badge)](https://scorecard.dev/viewer/?uri=github.com/szl-holdings/vsp-otel)
-[![DOI v18.0](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20434276-blue?style=flat-square&logo=doi&logoColor=white)](https://doi.org/10.5281/zenodo.20434276)
-[![Concept DOI](https://img.shields.io/badge/concept%20DOI-10.5281%2Fzenodo.19944926-805AD5?style=flat-square&logo=doi&logoColor=white)](https://doi.org/10.5281/zenodo.19944926)
-[![License](https://img.shields.io/badge/license-Apache%202.0-2DA44E?style=flat-square)](./LICENSE)
-[![Doctrine v6](https://img.shields.io/badge/doctrine-v6-01696F?style=flat-square)](https://github.com/szl-holdings/ouroboros-thesis)
+[![License](https://img.shields.io/badge/license-Apache--2.0-2DA44E?style=flat-square)](./LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20434276.svg)](https://doi.org/10.5281/zenodo.20434276)
+[![Concept DOI](https://img.shields.io/badge/concept%20DOI-10.5281%2Fzenodo.19944926-01696F?style=flat-square&logo=doi&logoColor=white)](https://doi.org/10.5281/zenodo.19944926)
+[![Series-A Engineering](https://img.shields.io/badge/Series--A-Engineering-success?style=flat-square)](https://github.com/szl-holdings)
+[![Λ-axis spans](https://img.shields.io/badge/Frontier-Λ--axis%20spans-28251D?style=flat-square)](https://doi.org/10.5281/zenodo.20434276)
+[![Doctrine v6](https://img.shields.io/badge/Doctrine--v6-passing-success?style=flat-square)](https://github.com/szl-holdings/platform/blob/main/docs/doctrine/szl-doctrine.md)
 
 
 > **Frontier Capability** — first measure-theoretic (martingale + Doob stopping) OpenTelemetry governance exporter.  
