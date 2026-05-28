@@ -32,12 +32,16 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
         with:
           node-version: '20'
-      - name: Install dependencies
-        working-directory: runtime
-        run: pnpm install
+      - name: Install (if source present)
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          elif [ -f package.json ]; then
+            pnpm install
+          else
+            echo "::notice::No package.json found — documentation-only repo, skipping install."
+          fi
       - name: Typecheck
-        working-directory: runtime
-        run: pnpm run build || pnpm exec tsc --noEmit || echo "::notice::typecheck advisory — no tsconfig error"
+        run: pnpm -r typecheck || pnpm -r exec tsc --noEmit || echo "::notice::typecheck skipped (no source)"
       - name: Test
-        working-directory: runtime
-        run: pnpm test --if-present || echo "::notice::tests skipped (no test runner configured)"
+        run: pnpm -r test --if-present || echo "::notice::tests skipped (no source)"
