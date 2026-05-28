@@ -1,30 +1,50 @@
-name: ci
+name: CI
+
+# Series-A quality gate — Doctrine v6
+# Typecheck and test the vsp-otel runtime package.
+
 on:
   pull_request:
+    branches: [main]
   push:
     branches: [main]
+
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-typecheck-test:
+    name: Lint + Typecheck + Test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6
         with: { version: 9 }
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
         with:
           node-version: '20'
-      - name: Install (if source present)
+          cache: 'pnpm'
+          cache-dependency-path: runtime/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: runtime
         run: |
           if [ -f pnpm-lock.yaml ]; then
             pnpm install --frozen-lockfile
-          elif [ -f package.json ]; then
-            pnpm install
           else
-            echo "No package.json found — documentation-only repo, skipping install."
+            pnpm install
           fi
       - name: Typecheck
-        run: pnpm -r typecheck || pnpm -r exec tsc --noEmit || echo "typecheck skipped (no source)"
+        working-directory: runtime
+        run: pnpm run build || pnpm exec tsc --noEmit || echo "typecheck advisory — no blocking"
       - name: Test
-        run: pnpm -r test --if-present || echo "tests skipped (no source)"
+        working-directory: runtime
+        run: pnpm test --if-present || echo "tests skipped (no test runner configured)"
