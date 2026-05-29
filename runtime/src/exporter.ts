@@ -45,22 +45,29 @@ export interface LambdaSignedSpan {
  * Derive axes from an OTel span's attributes.
  * Attributes may include pre-computed axis scores (e.g. from ML inference);
  * missing axes default to 0.90 (floor).
+ *
+ * OTel SemConv compliance (PhD-audit 2026-05-29):
+ * Attribute names use lowercase_snake_case per OTel semantic conventions
+ * (https://opentelemetry.io/docs/specs/semconv/general/attribute-naming/).
+ * e.g. lambda.moral_grounding, not lambda.moralGrounding.
+ * Both camelCase (legacy) and snake_case keys are checked for back-compat.
  */
 export function axesFromSpan(span: OtelSpan): Axes {
-  const get = (key: string, def = 0.90): number => {
-    const v = span.attributes[`lambda.${key}`];
+  const get = (snakeKey: string, camelKey: string, def = 0.90): number => {
+    // Prefer snake_case (SemConv-compliant); fall back to camelCase for back-compat
+    const v = span.attributes[`lambda.${snakeKey}`] ?? span.attributes[`lambda.${camelKey}`];
     return typeof v === "number" ? Math.min(1, Math.max(0, v)) : def;
   };
   return {
-    moralGrounding:       get("moralGrounding"),
-    measurabilityHonesty: get("measurabilityHonesty"),
-    epistemicHumility:    get("epistemicHumility"),
-    harmAvoidance:        get("harmAvoidance"),
-    logicalCoherence:     get("logicalCoherence"),
-    citationIntegrity:    get("citationIntegrity"),
-    noveltyContribution:  get("noveltyContribution"),
-    reproducibility:      get("reproducibility"),
-    stakeholderAlignment: get("stakeholderAlignment"),
+    moralGrounding:       get("moral_grounding", "moralGrounding"),
+    measurabilityHonesty: get("measurability_honesty", "measurabilityHonesty"),
+    epistemicHumility:    get("epistemic_humility", "epistemicHumility"),
+    harmAvoidance:        get("harm_avoidance", "harmAvoidance"),
+    logicalCoherence:     get("logical_coherence", "logicalCoherence"),
+    citationIntegrity:    get("citation_integrity", "citationIntegrity"),
+    noveltyContribution:  get("novelty_contribution", "noveltyContribution"),
+    reproducibility:      get("reproducibility", "reproducibility"),
+    stakeholderAlignment: get("stakeholder_alignment", "stakeholderAlignment"),
   };
 }
 
