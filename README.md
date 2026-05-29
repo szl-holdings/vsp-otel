@@ -22,7 +22,7 @@ All counts are grep-verifiable from this repository.
 
 | Metric | Value | How to verify |
 |--------|-------|---------------|
-| TypeScript modules (runtime) | 6 | `find runtime/src -name "*.ts" \| wc -l` |
+| TypeScript modules (runtime) | 3 | `find runtime/src -name "*.ts" | wc -l` |
 | Total files | 36 | `find . -not -path './.git/*' -type f \| wc -l` |
 | Λ-gate axes | 9 | `evaluateAxes` from `@szl/ouroboros-lambda-gate` |
 | Export format | OTLP-compatible | W3C traceparent preserved end-to-end |
