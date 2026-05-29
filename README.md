@@ -1,14 +1,15 @@
 # vsp-otel — Lambda-Signed OpenTelemetry Exporter
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-0B1F3A.svg?style=flat-square&logo=apache&logoColor=ffa500)](https://www.apache.org/licenses/LICENSE-2.0)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-0B1F3A.svg?style=flat-square&logo=apache&logoColor=00D4FF)](https://www.apache.org/licenses/LICENSE-2.0)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20424995.svg)](https://doi.org/10.5281/zenodo.20424995)
 [![CI](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml)
+[![Tests](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml)
 [![SBOM](https://github.com/szl-holdings/vsp-otel/actions/workflows/sbom.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/sbom.yml)
-[![SLSA: enabled](https://img.shields.io/badge/SLSA-enabled-0B1F3A.svg?style=flat-square&logoColor=ffa500)](https://slsa.dev/spec/v1.0/levels)
+[![SLSA 3](https://github.com/szl-holdings/vsp-otel/actions/workflows/slsa.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/slsa.yml)
 [![DCO](https://github.com/szl-holdings/vsp-otel/actions/workflows/dco.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/dco.yml)
-[![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0110--4173-A6CE39.svg?style=flat-square&logo=orcid)](https://orcid.org/0009-0001-0110-4173)
-[![HF Space](https://img.shields.io/badge/HF%20Space-vsp--otel--platform-green?logo=huggingface)](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-platform)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/szl-holdings/vsp-otel/badge)](https://securityscorecards.dev/viewer/?uri=github.com/szl-holdings/vsp-otel)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0110--4173-A6CE39.svg?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0009-0001-0110-4173)
 
 **vsp-otel** is the OpenTelemetry exporter for SZL audit fibers. It attaches Λ-axis receipts to
 OTel spans, producing W3C trace-id compatible, OTLP-compliant telemetry with governance provenance
