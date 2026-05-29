@@ -41,14 +41,24 @@ function makeSpan(
   };
 }
 
-/** Synthetic anchor descriptor — labeled synthetic: true per Doctrine v6. */
+/**
+ * Synthetic anchor descriptor — labeled synthetic: true per Doctrine v6.
+ *
+ * Uses Lutar.Calibration.FalsePosition.false_position_correct, which is a
+ * verified non-sorry theorem on lutar-lean main (confirmed 2026-05-30).
+ * The formula_id slug "false_position" is one of the five canonical anchor
+ * formulas in Doctrine v6.
+ */
 const SYNTHETIC_ANCHOR: AnchorFormulaDescriptor = {
-  formula_id:       "liu_hui_pi",
-  lean_theorem_ref: "Lutar.Banach.LiuHuiPi.liu_hui_pi_converges",
+  formula_id:       "false_position",
+  lean_theorem_ref: "Lutar.Calibration.FalsePosition.false_position_correct",
   lean_commit_sha:  "c4d13795689601324fce0236351bfe0ade990a43", // lutar-lean main HEAD 2026-05-30
 };
 
-/** Madhava-bound anchor descriptor — referenced by L7 witnessed forecasting. */
+/**
+ * Madhava-bound anchor descriptor — referenced by L7 witnessed forecasting.
+ * Theorem confirmed to exist at Lutar/PACBayes/MadhavaBound.lean on main.
+ */
 const MADHAVA_ANCHOR: AnchorFormulaDescriptor = {
   formula_id:       "madhava_bound",
   lean_theorem_ref: "Lutar.PACBayes.MadhavaBound.madhava_alt_series_bound",
@@ -100,9 +110,9 @@ describe("injectAnchorFormula", () => {
     const span = makeSpan({ spanId: "anchor-inject-001" });
     injectAnchorFormula(span, SYNTHETIC_ANCHOR);
 
-    expect(span.attributes["szl.anchor_formula.id"]).toBe("liu_hui_pi");
+    expect(span.attributes["szl.anchor_formula.id"]).toBe("false_position");
     expect(span.attributes["szl.lean_theorem_ref"]).toBe(
-      "Lutar.Banach.LiuHuiPi.liu_hui_pi_converges",
+      "Lutar.Calibration.FalsePosition.false_position_correct",
     );
     expect(span.attributes["szl.lean_commit_sha"]).toBe(
       "c4d13795689601324fce0236351bfe0ade990a43",
@@ -168,9 +178,9 @@ describe("signSpan", () => {
     const result = signSpan(span, SYNTHETIC_ANCHOR);
 
     // The attributes are injected into the span object in-place
-    expect(result.span.attributes["szl.anchor_formula.id"]).toBe("liu_hui_pi");
+    expect(result.span.attributes["szl.anchor_formula.id"]).toBe("false_position");
     expect(result.span.attributes["szl.lean_theorem_ref"]).toBe(
-      "Lutar.Banach.LiuHuiPi.liu_hui_pi_converges",
+      "Lutar.Calibration.FalsePosition.false_position_correct",
     );
     expect(result.span.attributes["szl.lean_commit_sha"]).toBe(
       "c4d13795689601324fce0236351bfe0ade990a43",

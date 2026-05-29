@@ -46,20 +46,27 @@ export interface LambdaSignedSpan {
  * as OTel span attributes per the SZL Holdings SemConv extension.
  *
  * OTel attribute names:
- *   szl.anchor_formula.id   — formula slug (e.g. "liu_hui_pi")
+ *   szl.anchor_formula.id   — formula slug (e.g. "false_position", "madhava_bound")
  *   szl.lean_theorem_ref    — fully-qualified Lean 4 theorem name
  *   szl.lean_commit_sha     — lutar-lean main HEAD SHA at span-creation time
  *
  * All three attributes are optional at the exporter level; callers that
  * do not operate under a specific anchor formula omit the descriptor and
  * the attributes are not injected.
+ *
+ * Doctrine v6: lean_theorem_ref MUST correspond to a real, non-sorry theorem
+ * on lutar-lean main.  Verified canonical values include:
+ *   "Lutar.Calibration.FalsePosition.false_position_correct"
+ *   "Lutar.PACBayes.MadhavaBound.madhava_alt_series_bound"
+ *   "Lutar.Khipu.SummationInvariant.khipuReceipt_checksum_invariant"
+ *   "Lutar.Composition.Robustness.robustness_preserved_by_composition"
  */
 export interface AnchorFormulaDescriptor {
-  /** Formula slug as it appears in the ANCHOR_REGISTRY, e.g. "liu_hui_pi" */
+  /** Formula slug as it appears in the ANCHOR_REGISTRY, e.g. "false_position" or "madhava_bound" */
   formula_id: string;
   /**
    * Fully-qualified Lean 4 theorem reference from lutar-lean, e.g.
-   * "Lutar.PACBayes.MadhavaBound.madhava_alt_series_bound"
+   * "Lutar.Calibration.FalsePosition.false_position_correct"
    */
   lean_theorem_ref: string;
   /**
@@ -83,6 +90,9 @@ export interface AnchorFormulaDescriptor {
  *
  * @param span   - The OtelSpan whose attributes will be augmented.
  * @param anchor - Descriptor containing formula_id, lean_theorem_ref, lean_commit_sha.
+ *                 All theorem refs must correspond to real theorems in lutar-lean;
+ *                 see Lutar/Calibration/FalsePosition.lean, Lutar/PACBayes/MadhavaBound.lean,
+ *                 Lutar/Khipu/SummationInvariant.lean, Lutar/Composition/AdversarialRobustness.lean.
  * @returns The mutated attributes map (same reference as span.attributes).
  */
 export function injectAnchorFormula(
