@@ -38,6 +38,74 @@ export interface LambdaSignedSpan {
 }
 
 // ---------------------------------------------------------------------------
+// Anchor formula injection (Phase 1 L4 — OTel SemConv)
+// ---------------------------------------------------------------------------
+
+/**
+ * Anchor formula descriptor — populated at span-creation time and injected
+ * as OTel span attributes per the SZL Holdings SemConv extension.
+ *
+ * OTel attribute names:
+ *   szl.anchor_formula.id   — formula slug (e.g. "false_position", "madhava_bound")
+ *   szl.lean_theorem_ref    — fully-qualified Lean 4 theorem name
+ *   szl.lean_commit_sha     — lutar-lean main HEAD SHA at span-creation time
+ *
+ * All three attributes are optional at the exporter level; callers that
+ * do not operate under a specific anchor formula omit the descriptor and
+ * the attributes are not injected.
+ *
+ * Doctrine v6: lean_theorem_ref MUST correspond to a real, non-sorry theorem
+ * on lutar-lean main.  Verified canonical values include:
+ *   "Lutar.Calibration.FalsePosition.false_position_correct"
+ *   "Lutar.PACBayes.MadhavaBound.madhava_alt_series_bound"
+ *   "Lutar.Khipu.SummationInvariant.khipuReceipt_checksum_invariant"
+ *   "Lutar.Composition.Robustness.robustness_preserved_by_composition"
+ */
+export interface AnchorFormulaDescriptor {
+  /** Formula slug as it appears in the ANCHOR_REGISTRY, e.g. "false_position" or "madhava_bound" */
+  formula_id: string;
+  /**
+   * Fully-qualified Lean 4 theorem reference from lutar-lean, e.g.
+   * "Lutar.Calibration.FalsePosition.false_position_correct"
+   */
+  lean_theorem_ref: string;
+  /**
+   * The lutar-lean main-branch HEAD commit SHA at span-creation time.
+   * Callers should obtain this once at process start and pass it through;
+   * this is intentionally NOT fetched at runtime inside the exporter to
+   * avoid I/O dependencies in the hot path.
+   */
+  lean_commit_sha: string;
+}
+
+/**
+ * Inject the three SZL anchor-formula OTel span attributes into an existing
+ * span's attributes map.
+ *
+ * This function mutates `span.attributes` in-place and also returns the
+ * updated attributes map for convenience.
+ *
+ * Per OTel SemConv the attribute names use dot-separated lowercase namespacing:
+ *   https://opentelemetry.io/docs/specs/semconv/general/attribute-naming/
+ *
+ * @param span   - The OtelSpan whose attributes will be augmented.
+ * @param anchor - Descriptor containing formula_id, lean_theorem_ref, lean_commit_sha.
+ *                 All theorem refs must correspond to real theorems in lutar-lean;
+ *                 see Lutar/Calibration/FalsePosition.lean, Lutar/PACBayes/MadhavaBound.lean,
+ *                 Lutar/Khipu/SummationInvariant.lean, Lutar/Composition/AdversarialRobustness.lean.
+ * @returns The mutated attributes map (same reference as span.attributes).
+ */
+export function injectAnchorFormula(
+  span: OtelSpan,
+  anchor: AnchorFormulaDescriptor,
+): Record<string, string | number | boolean> {
+  span.attributes["szl.anchor_formula.id"] = anchor.formula_id;
+  span.attributes["szl.lean_theorem_ref"]  = anchor.lean_theorem_ref;
+  span.attributes["szl.lean_commit_sha"]   = anchor.lean_commit_sha;
+  return span.attributes;
+}
+
+// ---------------------------------------------------------------------------
 // Exporter: attaches a Λ-receipt to every span before export
 // ---------------------------------------------------------------------------
 
@@ -80,11 +148,26 @@ export function spanHash(span: OtelSpan): string {
 
 /**
  * Sign a span with a Λ-receipt and optionally push to the gate store.
+ *
+ * If `anchor` is provided the three SZL anchor-formula attributes are
+ * injected into the span's attributes map before the span is returned.
+ * This satisfies the Phase 1 L4 requirement:
+ *   szl.anchor_formula.id, szl.lean_theorem_ref, szl.lean_commit_sha
+ * are present on every span that carries a policy-gate decision.
  */
-export function signSpan(span: OtelSpan): LambdaSignedSpan {
+export function signSpan(
+  span: OtelSpan,
+  anchor?: AnchorFormulaDescriptor,
+): LambdaSignedSpan {
   const axes  = axesFromSpan(span);
   const ev    = evaluateAxes(axes);
   const hash  = spanHash(span);
+
+  // Inject anchor-formula attributes if a descriptor was supplied.
+  // This must happen before gateTransit so the gate sees the full attribute set.
+  if (anchor !== undefined) {
+    injectAnchorFormula(span, anchor);
+  }
 
   // Attempt gate transit (stores only if pass=true)
   try {
