@@ -1,9 +1,29 @@
-
+cff-version: 1.2.0
+message: "If you use this software, please cite as follows."
+title: "vsp-otel — OpenTelemetry exporter for SZL audit fibers and Λ-axis spans"
+version: "0.1.0"
+date-released: "2026-05-29"
+abstract: >-
+  OpenTelemetry exporter for SZL Holdings audit fibers and Λ-axis spans.
+  Implements semantic conventions for governance observability over the
+  Ouroboros runtime span model.
+type: software
+authors:
+  - family-names: Lutar
+    given-names: "Stephen P."
+    name-suffix: "Jr."
+    affiliation: SZL Holdings
+    orcid: "https://orcid.org/0009-0001-0110-4173"
 license: Apache-2.0
+url: "https://github.com/szl-holdings/vsp-otel"
+repository-code: "https://github.com/szl-holdings/vsp-otel"
+keywords:
+  - szl-holdings
+  - ai-governance
+  - opentelemetry
+  - observability
+  - audit-spans
 identifiers:
-  - description: "Ouroboros Thesis v18.0 — Multi-track Substrate Expansion (Zenodo)"
-    type: doi
-    value: "10.5281/zenodo.20434276"
   - description: "Ouroboros Thesis concept DOI — always-latest"
     type: doi
     value: "10.5281/zenodo.19944926"
