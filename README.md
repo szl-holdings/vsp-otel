@@ -32,7 +32,7 @@
 > **NOTE:** SLSA Level 1 (source + build provenance documented). L2/L3 require Sigstore + isolated builders (roadmap).
 
 > OpenTelemetry exporter for SZL audit fibers — attaches Λ-axis receipts to OTel spans with W3C trace-id compatibility and OTLP compliance.  
-> Doctrine v6 · DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)
+> Doctrine v7 · DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)
 
 **vsp-otel** is the OpenTelemetry exporter for SZL audit fibers. It attaches Λ-axis governance receipts to OTel spans, producing W3C trace-id compatible, OTLP-compliant telemetry with governance provenance embedded in every exported span.
 
@@ -56,10 +56,10 @@
 |--------|-------|--------|
 | CI status | GREEN | [Actions](https://github.com/szl-holdings/vsp-otel/actions) |
 | Open PRs | 0 | clean |
-| Lean declarations (org) | 217 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
-| Lean axioms (org) | 12 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
-| HF Spaces (org) | 27 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
-| HF datasets (org) | 31 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
+| Lean declarations (org) | 626 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
+| Lean axioms (org) | 15 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
+| HF Spaces (org) | 26 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
+| HF datasets (org) | 29 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
 | Zenodo DOIs (org) | 7 | [Zenodo community](https://zenodo.org/communities/szl-holdings) |
 
 ---
