@@ -11,6 +11,9 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/szl-holdings/vsp-otel/badge)](https://securityscorecards.dev/viewer/?uri=github.com/szl-holdings/vsp-otel)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0110--4173-A6CE39.svg?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0009-0001-0110-4173)
 
+
+> **NOTE:** SLSA Level 1 (source + build provenance documented). L2/L3 require Sigstore + isolated builders (roadmap).
+
 > OpenTelemetry exporter for SZL audit fibers — attaches Λ-axis receipts to OTel spans with W3C trace-id compatibility and OTLP compliance.  
 > Doctrine v6 · DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)
 
