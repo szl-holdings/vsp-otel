@@ -25,7 +25,7 @@
 
 ## On Hugging Face
 
-[SZLHOLDINGS on Hugging Face](https://huggingface.co/SZLHOLDINGS) — 24 Spaces · 26 datasets · 2 models
+[SZLHOLDINGS on Hugging Face](https://huggingface.co/SZLHOLDINGS) — 27 Spaces · 31 datasets · 2 models
 
 | Surface | Artifact |
 |---------|----------|
@@ -43,8 +43,8 @@
 | Open PRs | 0 | clean |
 | Lean declarations (org) | 217 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
 | Lean axioms (org) | 12 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
-| HF Spaces (org) | 24 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
-| HF datasets (org) | 26 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
+| HF Spaces (org) | 27 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
+| HF datasets (org) | 31 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
 | Zenodo DOIs (org) | 7 | [Zenodo community](https://zenodo.org/communities/szl-holdings) |
 
 ---
