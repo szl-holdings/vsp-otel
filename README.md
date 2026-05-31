@@ -1,87 +1,34 @@
 <div align="center">
 
-# 🌐 vsp-otel
+# vsp-otel
 
-**telemetry**
+**OpenTelemetry + DSSE attestation chapter for governed agentic spans.**
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20434276.svg)](https://doi.org/10.5281/zenodo.20434276) [![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0110--4173-a6ce39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0009-0001-0110-4173) [![Doctrine](https://img.shields.io/badge/Doctrine-v7-7c5cff?style=flat-square)](https://github.com/szl-holdings/.github/blob/main/DOCTRINE_V7.md) [![SLSA](https://img.shields.io/badge/SLSA-L1_honest-22c55e?style=flat-square)](https://slsa.dev/spec/v1.0/levels)
+[![Doctrine v7](https://img.shields.io/badge/Doctrine-v7-7c5cff?style=flat-square)](https://github.com/szl-holdings/.github/blob/main/DOCTRINE_V7.md) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-0B1F3A.svg?style=flat-square&logo=apache&logoColor=00D4FF)](https://www.apache.org/licenses/LICENSE-2.0) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20424995.svg)](https://doi.org/10.5281/zenodo.20424995)
 
-[Hugging Face](https://huggingface.co/SZLHOLDINGS) · [Demo](https://szlholdings-readme.static.hf.space/) · [GitHub Org](https://github.com/szl-holdings)
+[![CI](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml) [![Tests](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml) [![CodeQL](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml) [![SBOM](https://github.com/szl-holdings/vsp-otel/actions/workflows/sbom.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/sbom.yml) [![DCO](https://github.com/szl-holdings/vsp-otel/actions/workflows/dco.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/dco.yml) [![SLSA L1](https://img.shields.io/badge/SLSA-L1_(SBOM_%2B_DCO)-0B1F3A.svg?style=flat-square)](https://slsa.dev/spec/v1.0/levels) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/szl-holdings/vsp-otel/badge)](https://securityscorecards.dev/viewer/?uri=github.com/szl-holdings/vsp-otel) [![GHAS](https://img.shields.io/badge/GHAS-Code_Security-2DA44E.svg?style=flat-square&logo=github)](https://github.com/szl-holdings/vsp-otel/security/code-scanning) [![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0110--4173-A6CE39.svg?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0009-0001-0110-4173)
+
+[Hugging Face](https://huggingface.co/SZLHOLDINGS) · [GitHub Org](https://github.com/szl-holdings)
 
 `receipts.in ≡ receipts.out`
 
 </div>
 
 ---
-# vsp-otel — Λ-Signed OpenTelemetry Exporter
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-0B1F3A.svg?style=flat-square&logo=apache&logoColor=00D4FF)](https://www.apache.org/licenses/LICENSE-2.0)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20424995.svg)](https://doi.org/10.5281/zenodo.20424995)
-[![CI](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml)
-[![Tests](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml)
-[![CodeQL](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/codeql.yml)
-[![GHAS Code Security](https://img.shields.io/badge/GHAS-Code_Security-2DA44E.svg?style=flat-square&logo=github)](https://github.com/szl-holdings/vsp-otel/security/code-scanning)
-[![Secret Protection](https://img.shields.io/badge/GHAS-Secret_Protection-2DA44E.svg?style=flat-square&logo=github)](https://github.com/szl-holdings/vsp-otel/security/secret-scanning)
-[![SBOM](https://github.com/szl-holdings/vsp-otel/actions/workflows/sbom.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/sbom.yml)
-[![SLSA L1 (SBOM + DCO)](https://img.shields.io/badge/SLSA-L1_(SBOM_%2B_DCO)-0B1F3A.svg?style=flat-square)](https://slsa.dev/spec/v1.0/levels)
-[![DCO](https://github.com/szl-holdings/vsp-otel/actions/workflows/dco.yml/badge.svg?branch=main)](https://github.com/szl-holdings/vsp-otel/actions/workflows/dco.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/szl-holdings/vsp-otel/badge)](https://securityscorecards.dev/viewer/?uri=github.com/szl-holdings/vsp-otel)
-[![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0110--4173-A6CE39.svg?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0009-0001-0110-4173)
-
-
-> **NOTE:** SLSA Level 1 (source + build provenance documented). L2/L3 require Sigstore + isolated builders (roadmap).
-
-> OpenTelemetry exporter for SZL audit fibers — attaches Λ-axis receipts to OTel spans with W3C trace-id compatibility and OTLP compliance.  
-> Doctrine v7 · DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)
-
-**vsp-otel** is the OpenTelemetry exporter for SZL audit fibers. It attaches Λ-axis governance receipts to OTel spans, producing W3C trace-id compatible, OTLP-compliant telemetry with governance provenance embedded in every exported span.
+> A measurable governance operator on the receipt-bus σ-algebra of agentic AI — surfaced as W3C-trace-id-compatible, OTLP-compliant spans with DSSE attestation wrapped at every Λ-axis boundary.
 
 ---
 
-## On Hugging Face
+## What this is
 
-[SZLHOLDINGS on Hugging Face](https://huggingface.co/SZLHOLDINGS) — 26 Spaces · 29 datasets · 2 models
+**vsp-otel** is the OpenTelemetry exporter and DSSE attestation chapter for the SZL Holdings governed AI platform. It attaches Λ-axis governance receipts to OTel spans, producing W3C trace-id-compatible, OTLP-compliant telemetry with full governance provenance embedded in every exported span. The DPI soundness pipeline (`src/pipeline/dpi_soundness.ts`) enforces TH6 — the Data Processing Inequality invariant, Lean-discharged with zero sorries. This chapter is staged for upstream contribution to [defenseunicorns/uds-docs](https://github.com/defenseunicorns/uds-docs).
 
-| Surface | Artifact |
-|---------|----------|
-| Live demo | [vsp-otel-emitter](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-emitter) · [vsp-otel-platform](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-platform) |
-| Deep-dive | [vsp-otel-deep-dive](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-deep-dive) |
-| Source mirror | [vsp-otel-source](https://huggingface.co/datasets/SZLHOLDINGS/vsp-otel-source) |
+## Why it matters
 
----
+Agentic AI systems produce decision spans that need to be auditable across organizational boundaries. vsp-otel makes governance provenance a first-class OTel concern: every span carries a DSSE-wrapped receipt, SLA relay latency gates enforce sub-millisecond governance overhead, and the SCITT mask entropy module ensures redaction is entropy-bounded and verifiable. This is the bridge between the SZL receipt bus and any standard observability backend.
 
-## What is real today
-
-| Metric | Count | Verify |
-|--------|-------|--------|
-| CI status | GREEN | [Actions](https://github.com/szl-holdings/vsp-otel/actions) |
-| Open PRs | 0 | clean |
-| Lean declarations (org) | 752 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
-| Lean axioms (org) | 15 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
-| HF Spaces (org) | 26 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
-| HF datasets (org) | 29 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
-| Zenodo DOIs (org) | 7 | [Zenodo community](https://zenodo.org/communities/szl-holdings) |
-
----
-
-## Architecture
-
-```
-SZL runtime span event
-        │
-        ▼
-vsp-otel exporter
-  ├── Λ-axis receipt attachment
-  ├── W3C trace-id injection
-  └── OTLP export
-        │
-        ▼
-OpenTelemetry collector → observability backend
-```
-
----
-
-## Quick start
+## Quickstart
 
 ```bash
 pnpm install && pnpm build
@@ -89,24 +36,85 @@ pnpm test
 pnpm emit:sample   # emit a sample Λ-signed span
 ```
 
----
+To inspect the lambda gate exporter directly:
 
-## License
+```bash
+cd runtime && npx tsx src/exporter.test.ts
+```
 
-[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) — SZL Holdings
+## Key files
 
----
+| Path | Role |
+|------|------|
+| `runtime/src/exporter.ts` | Core Λ-axis receipt attachment + OTLP export |
+| `runtime/src/exporter.test.ts` | Exporter test harness |
+| `src/pipeline/dpi_soundness.ts` | TH6 DPI Soundness pipeline check (Lean-discharged, 0 sorries) |
+| `src/redaction/scitt_mask_entropy.ts` | SCITT mask entropy bound for redacted spans |
+| `src/sla/relay_latency_gate.ts` | Sub-millisecond SLA gate for governance relay |
+| `runtime/src/formulas/` | Formula implementations (Madhava bound, Liu Hui π, false position, adversarial robustness, summation invariant) |
+| `stubs/ouroboros-types/` | Shared Ouroboros type stubs |
+| `stubs/ouroboros-lambda-gate/` | Lambda gate interface stubs |
+
+## OTel span schema
+
+Each governed span carries:
+
+```
+traceparent: <W3C trace-id>
+szl.receipt.id: <receipt_id>
+szl.receipt.hash: <sha256 hash>
+szl.lambda.score: <Λ-axis float>
+szl.policy.version: <covenant-v1>
+szl.dsse.sig: <base64 DSSE envelope>
+```
+
+## DSSE wrap pattern
+
+```
+span event → Λ-axis receipt attachment → DSSE envelope → OTLP export
+                                              │
+                                    SCITT-compatible attestation
+                                    (entropy-bounded redaction)
+```
+
+Upstream PR target: [defenseunicorns/uds-docs](https://github.com/defenseunicorns/uds-docs)
+
+## Related
+
+| Repo | Role |
+|------|------|
+| [uds-mesh](https://github.com/szl-holdings/uds-mesh) | UDS service mesh integration |
+| [ouroboros](https://github.com/szl-holdings/ouroboros) | Core runtime |
+| [ouroboros-thesis](https://github.com/szl-holdings/ouroboros-thesis) | Formal research paper (DOI [10.5281/zenodo.20434276](https://doi.org/10.5281/zenodo.20434276)) |
+| [lutar-lean](https://github.com/szl-holdings/lutar-lean) | Lean 4 proofs — 749 decls / 15 raw axioms / 163 sorries @ HEAD c7c0ba17 |
+| [a11oy](https://github.com/szl-holdings/a11oy) | Flagship governance app |
+| [amaru](https://github.com/szl-holdings/amaru) | Cardano anchoring layer |
+| [sentra](https://github.com/szl-holdings/sentra) | Policy enforcement engine |
+| [terra](https://github.com/szl-holdings/terra) | Infrastructure substrate |
+| [vessels](https://github.com/szl-holdings/vessels) | Data pipeline layer |
+| Hatun Doctrine Specification | [szl-holdings/platform/docs/a11oy/spec/hatun-doctrine-spec/](https://github.com/szl-holdings/platform/tree/main/docs/a11oy/spec/hatun-doctrine-spec/) |
+
+## On Hugging Face
+
+[SZLHOLDINGS on Hugging Face](https://huggingface.co/SZLHOLDINGS) — Spaces · datasets · models
+
+| Surface | Artifact |
+|---------|----------|
+| Live demo | [vsp-otel-emitter](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-emitter) · [vsp-otel-platform](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-platform) |
+| Deep-dive | [vsp-otel-deep-dive](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-deep-dive) |
+| Source mirror | [vsp-otel-source](https://huggingface.co/datasets/SZLHOLDINGS/vsp-otel-source) |
 
 ## Citation
 
+See [CITATION.cff](./CITATION.cff) for machine-readable metadata. Quick reference:
+
 ```
-S. P. Lutar Jr., "vsp-otel — Λ-Signed OpenTelemetry Exporter,"
-Zenodo, DOI 10.5281/zenodo.20424995, 2026.
+S. P. Lutar Jr., "vsp-otel — OpenTelemetry + DSSE attestation chapter for governed agentic spans,"
+SZL Holdings, 2026. https://github.com/szl-holdings/vsp-otel
 ```
-ORCID: [0009-0001-0110-4173](https://orcid.org/0009-0001-0110-4173)
 
----
+Preferred citation: [The Ouroboros Substrate (v18.0)](https://doi.org/10.5281/zenodo.20434276), DOI 10.5281/zenodo.20434276.
 
-## Security
+## License · Trust · Security
 
-See [SECURITY.md](./SECURITY.md) for responsible-disclosure policy.
+[Apache 2.0](./LICENSE). SLSA Level 1 (source + build provenance documented; L2/L3 require Sigstore + isolated builders — roadmap). Security disclosures: see [SECURITY.md](./SECURITY.md).

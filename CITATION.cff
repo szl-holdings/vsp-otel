@@ -1,32 +1,46 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite as follows."
-title: "vsp-otel — OpenTelemetry exporter for SZL audit fibers and Λ-axis spans"
-version: "0.1.0"
-date-released: "2026-05-29"
-abstract: >-
-  OpenTelemetry exporter for SZL Holdings audit fibers and Λ-axis spans.
-  Implements semantic conventions for governance observability over the
-  Ouroboros runtime span model.
+title: "vsp-otel — OpenTelemetry + DSSE attestation chapter for governed agentic spans"
+message: "If you use this work, please cite it as below."
 type: software
 authors:
   - family-names: Lutar
-    given-names: "Stephen P."
-    name-suffix: "Jr."
-    affiliation: SZL Holdings
+    given-names: Stephen P.
+    name-suffix: Jr.
     orcid: "https://orcid.org/0009-0001-0110-4173"
+    affiliation: "SZL Holdings, Inc."
+abstract: >-
+  OpenTelemetry exporter and DSSE attestation chapter for the SZL Holdings
+  governed AI platform. Attaches Λ-axis governance receipts to OTel spans,
+  producing W3C trace-id-compatible, OTLP-compliant telemetry with full
+  governance provenance. Staged for upstream contribution to defenseunicorns/uds-docs.
+keywords:
+  - AI governance
+  - OpenTelemetry
+  - DSSE
+  - attestation
+  - governance receipts
+  - OTLP
+  - EU AI Act
+  - NIST AI RMF
 license: Apache-2.0
+version: "0.3.0"
+date-released: "2026-05-31"
 url: "https://github.com/szl-holdings/vsp-otel"
 repository-code: "https://github.com/szl-holdings/vsp-otel"
-keywords:
-  - szl-holdings
-  - ai-governance
-  - opentelemetry
-  - observability
-  - audit-spans
 identifiers:
+  - description: "vsp-otel Zenodo DOI"
+    type: doi
+    value: "10.5281/zenodo.20424995"
   - description: "Ouroboros Thesis concept DOI — always-latest"
     type: doi
     value: "10.5281/zenodo.19944926"
-  - description: "ORCID iD of the principal author"
-    type: other
-    value: "https://orcid.org/0009-0001-0110-4173"
+preferred-citation:
+  type: article
+  title: "The Ouroboros Substrate (v18.0)"
+  authors:
+    - family-names: Lutar
+      given-names: Stephen P.
+      name-suffix: Jr.
+      orcid: "https://orcid.org/0009-0001-0110-4173"
+  year: 2026
+  doi: "10.5281/zenodo.20434276"
