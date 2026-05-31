@@ -1,9 +1,13 @@
 /**
  * TH6 DPI Soundness Pipeline Check
  *
- * @lean_theorem Lutar.DPI.TH6_DPISoundness.th6_dpi_soundness
+ * @lean_theorem Lutar.DPI.TH6_DPISoundness.dpi_receipt_chain_entropy_bound
  * @lean_file    Lutar/DPI/TH6_DPI_Soundness.lean
- * @lean_status  GREEN — 0 sorries
+ * @lean_status  SORRY-TRACKED — theorem name corrected from "th6_dpi_soundness" (did not exist) to
+ *               "dpi_receipt_chain_entropy_bound" (actual theorem at line 105). The theorem carries
+ *               one tracked sorry (log-sum / Jensen inequality discharge pending; Cover-Thomas
+ *               Thm 2.8.1 route documented). Not GREEN until sorry is discharged.
+ *               Per PhD-Math review 2026-05-31 (Pass 1, Binding #4, Finding F5 HIGH).
  * @lean_commit  see LEAN_COMMIT_SHA env var; pin at CI time from lutar-lean/lean-toolchain
  *
  * Theorem (Cover & Thomas 2006 §2.8.1 Theorem 2.8.1, Data Processing Inequality):
@@ -137,7 +141,7 @@ export function th6DpiSoundnessCheck(
 
   const receipt: DpiDsseReceipt = {
     formula: "th6_dpi_soundness",
-    lean_theorem: "Lutar.DPI.TH6_DPISoundness.th6_dpi_soundness",
+    lean_theorem: "Lutar.DPI.TH6_DPISoundness.dpi_receipt_chain_entropy_bound", // corrected per PhD-Math F5,
     lean_file: "Lutar/DPI/TH6_DPI_Soundness.lean",
     lean_commit_sha,
     inputs_hash,
