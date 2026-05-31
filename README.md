@@ -56,7 +56,7 @@
 |--------|-------|--------|
 | CI status | GREEN | [Actions](https://github.com/szl-holdings/vsp-otel/actions) |
 | Open PRs | 0 | clean |
-| Lean declarations (org) | 626 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
+| Lean declarations (org) | 752 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
 | Lean axioms (org) | 15 | [lutar-lean](https://github.com/szl-holdings/lutar-lean) |
 | HF Spaces (org) | 26 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
 | HF datasets (org) | 29 | [SZLHOLDINGS HF org](https://huggingface.co/SZLHOLDINGS) |
