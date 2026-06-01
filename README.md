@@ -24,6 +24,19 @@
 
 ---
 
+
+## Architecture
+
+```mermaid
+flowchart LR
+  APP[Instrumented app]:::in --> EXP[vsp-otel exporter]
+  EXP --> AXES[Λ-axis spans\n13 axes]
+  AXES --> COLLECTOR[(OTel collector)]
+  classDef in fill:#0B1F3A,color:#fff,stroke:#00D4FF;
+```
+
+> Exports Λ-axis spans for the 13-axis trust schema. Doctrine v11.
+
 ## What this is
 
 **vsp-otel** is the OpenTelemetry exporter and DSSE attestation chapter for the SZL Holdings governed AI platform. It attaches Λ-axis governance receipts to OTel spans, producing W3C trace-id-compatible, OTLP-compliant telemetry with full governance provenance embedded in every exported span. The DPI soundness pipeline (`src/pipeline/dpi_soundness.ts`) enforces TH6 — the Data Processing Inequality invariant, Lean-discharged with zero sorries. This chapter is staged for upstream contribution to [defenseunicorns/uds-docs](https://github.com/defenseunicorns/uds-docs).
