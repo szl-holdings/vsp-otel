@@ -117,8 +117,6 @@ Upstream PR target: [defenseunicorns/uds-docs](https://github.com/defenseunicorn
 |---------|----------|
 | Live demo | [vsp-otel-emitter](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-emitter) · [vsp-otel-platform](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-platform) |
 | Deep-dive | [vsp-otel-deep-dive](https://huggingface.co/spaces/SZLHOLDINGS/vsp-otel-deep-dive) |
-| Source mirror | [vsp-otel-source](https://huggingface.co/datasets/SZLHOLDINGS/vsp-otel-source) |
-
 ## Citation
 
 See [CITATION.cff](./CITATION.cff) for machine-readable metadata. Quick reference:
