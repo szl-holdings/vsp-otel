@@ -107,8 +107,6 @@ Upstream PR target: [defenseunicorns/uds-docs](https://github.com/defenseunicorn
 | [a11oy](https://github.com/szl-holdings/a11oy) | Flagship governance app |
 | [amaru](https://github.com/szl-holdings/amaru) | Cardano anchoring layer |
 | [sentra](https://github.com/szl-holdings/sentra) | Policy enforcement engine |
-| [terra](https://github.com/szl-holdings/terra) | Infrastructure substrate |
-| [vessels](https://github.com/szl-holdings/vessels) | Data pipeline layer |
 | Hatun Doctrine Specification | [szl-holdings/platform/docs/a11oy/spec/hatun-doctrine-spec/](https://github.com/szl-holdings/platform/tree/main/docs/a11oy/spec/hatun-doctrine-spec/) |
 
 ## On Hugging Face
