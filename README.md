@@ -4,7 +4,7 @@
 Λ-signed OpenTelemetry exporter for SZL audit fibers.
 
 [![tests](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml/badge.svg)](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml)
-&nbsp;Doctrine **v11 LOCKED** · 749 / 14 / 163 · SLSA L1+L2 · DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)
+&nbsp;Doctrine **v11 LOCKED** · 749 / 14 / 163 · SLSA L1 honest · DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)
 
 ---
 
@@ -29,7 +29,7 @@ forwards them to your existing backend (Tempo / Jaeger / any OTLP collector).
   - **`stats.py`** — **Welford** online mean/variance for span latency +
     **HyperLogLog** for unique-trace cardinality.
   - **`app.py`** — `/v1/traces` (OTLP ingest), `/healthz`, `/metrics` (Prometheus).
-- **`Dockerfile`** — per-file `COPY` only (doctrine §build), non-root, SLSA L1+L2 target.
+- **`Dockerfile`** — per-file `COPY` only (doctrine §build), non-root, SLSA L1 honest (no L2 provenance workflow present).
 - **`deploy/helm/vsp-otel/`** — Helm chart (`helm lint` clean); 2 replicas, security
   context, optional ServiceMonitor, configurable floor + forward endpoint.
 - **`docs/INTEGRATION.md`** — "your existing OTel SDK already works — just point the
