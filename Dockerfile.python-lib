@@ -3,7 +3,7 @@
 # Doctrine v11 LOCKED — 749/14/163 · Λ = Conjecture 1
 # Per-file COPY only — this Dockerfile NEVER uses `COPY . .` (SZL doctrine).
 # Minimal image: slim base, no build toolchain in the final layer.
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

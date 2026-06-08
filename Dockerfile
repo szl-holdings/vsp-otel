@@ -2,7 +2,7 @@
 # Layer 4 of the SZL 7-layer architecture. SLSA L1+L2 target.
 #
 # Per-file COPY only (SZL Doctrine v11 §build). No `COPY . .`.
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 
 # Non-root runtime user.
 RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin vsp
