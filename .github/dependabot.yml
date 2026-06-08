@@ -1,41 +1,74 @@
-# Per-repo Dependabot config for vsp-otel.
-# Tracks GitHub Actions (root) + npm (runtime/).
-
 version: 2
 updates:
+  # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
+      time: "08:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
+      - "security"
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns:
+          - "*"
 
-  - package-ecosystem: "npm"
-    directory: "/runtime"
+  # Python (pip) dependencies
+  - package-ecosystem: "pip"
+    directories:
+      - "/"
+      - "/collector"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
+      time: "08:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
+    open-pull-requests-limit: 5
     groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types: ["minor", "patch"]
-      development-dependencies:
-        dependency-type: "development"
-        update-types: ["minor", "patch"]
+      python-deps:
+        patterns:
+          - "*"
+
+  # Docker base images
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+    labels:
+      - "dependencies"
+      - "security"
+    open-pull-requests-limit: 3
+    groups:
+      docker-deps:
+        patterns:
+          - "*"
+
+  # npm / Node dependencies
+  - package-ecosystem: "npm"
+    directories:
+      - "/"
+      - "/runtime"
+      - "/stubs/ouroboros-lambda-gate"
+      - "/stubs/ouroboros-types"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+    labels:
+      - "dependencies"
+      - "security"
+    open-pull-requests-limit: 10
+    groups:
+      npm-deps:
+        patterns:
+          - "*"
