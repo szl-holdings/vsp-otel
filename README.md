@@ -65,7 +65,7 @@ geometric-mean gate. `/metrics` exposed `vsp_spans_total`, `vsp_lambda_floor`,
 
 | Used for | Lean reference | Status |
 |---|---|---|
-| Welford latency mean/variance | [`Lutar.Round11.Welford.welford_mean_exact`, `weightedMean_increment`](https://github.com/szl-holdings/lutar-lean/pull/180) | **theorem** (sorry-free), PR #180 · runtime: `sentra/runtime/welford_gate.py` |
+| Welford latency mean/variance | [`Lutar.Round11.Welford.welford_mean_exact`, `weightedMean_increment`](https://github.com/szl-holdings/lutar-lean/pull/180) | **theorem** (sorry-free), PR #180 · runtime path: `sentra/runtime/welford_gate.py` (infra dir of the **CHAPAQ** egress immune-inspector; path kept verbatim) |
 | DSSE in-toto attestations | [`Lutar.Round10.CryptoDSSE.dsse_classical_euf_cma`](https://github.com/szl-holdings/lutar-lean/pull/179) | conditional EUF-CMA **theorem** (0 real sorry), PR #179 |
 | Rekor transparency (cosign keyless) | [`Lutar.Round10.CryptoRekor.rekor_inclusion_completeness`](https://github.com/szl-holdings/lutar-lean/pull/179) | completeness **theorem**; soundness is an honest tagged `sorry` (Conjecture 1), PR #179 |
 | Bekenstein throughput ceiling (audit-fiber budget) | [`Lutar.Round10...bekensteinCeiling_mono_E`](https://github.com/szl-holdings/lutar-lean/pull/177) | **theorem** (0 real sorry), PR #177 |
