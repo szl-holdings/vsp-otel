@@ -81,7 +81,11 @@ class HyperLogLog:
         return 0.7213 / (1 + 1.079 / m)
 
     def add(self, item: str) -> None:
-        h = int.from_bytes(hashlib.sha1(item.encode()).digest()[:8], "big")
+        # SHA-1 here is a fast, uniform NON-cryptographic hash for HyperLogLog
+        # register indexing (cardinality estimation) — not a security primitive.
+        # usedforsecurity=False states that intent and clears the bandit B324 flag.
+        h = int.from_bytes(
+            hashlib.sha1(item.encode(), usedforsecurity=False).digest()[:8], "big")
         idx = h & (self.m - 1)
         w = h >> self.p
         rank = self._rho(w, 64 - self.p)
