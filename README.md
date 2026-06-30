@@ -4,7 +4,7 @@
 Λ-signed OpenTelemetry exporter for SZL audit fibers.
 
 [![tests](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml/badge.svg)](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml)
-&nbsp;Doctrine **v11 LOCKED** · 749 / 14 / 163 · SLSA L1 honest · DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)
+&nbsp;Doctrine **v11 LOCKED** · 749 / 14 / 163 · SLSA L1 honest · DOI [10.5281/zenodo.19944926](https://doi.org/10.5281/zenodo.19944926)
 
 ---
 
