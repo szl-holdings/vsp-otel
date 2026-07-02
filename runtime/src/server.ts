@@ -64,7 +64,9 @@ export function createVspServer(): http.Server {
 
       send(res, 404, { error: "not found" });
     } catch (err) {
-      send(res, 400, { error: err instanceof Error ? err.message : String(err) });
+      // Log detail server-side; return a generic message so internals are not leaked (CWE-209).
+      console.error("[vsp-otel] request error:", err);
+      send(res, 400, { error: "bad request" });
     }
   });
 }
