@@ -168,7 +168,7 @@ export function assertDpiSoundness(stages: PipelineStage[]): DpiSoundnessResult 
       `DPI SOUNDNESS VIOLATION (TH6): entropy increased from stage "${v.fromStage}" ` +
         `(${v.fromEntropy} bits) to "${v.toStage}" (${v.toEntropy} bits), ` +
         `excess = ${v.excess.toFixed(6)} bits. ` +
-        `Lean theorem Lutar.DPI.TH6_DPISoundness.th6_dpi_soundness prohibits entropy increase.`
+        `Lean theorem Lutar.DPI.TH6_DPISoundness.dpi_receipt_chain_entropy_bound prohibits entropy increase.`
     );
   }
   return result;

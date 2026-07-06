@@ -3,7 +3,7 @@
 # Doctrine v11 LOCKED — 749/14/163 · Λ = Conjecture 1
 #
 # The collector is the cross-pod broker: it RECEIVES spans over OTLP/gRPC from N
-# organs (a11oy, killinchu, rosie, ...) and EXPORTS them to:
+# instrumented services and EXPORTS them to:
 #   * Jaeger  (interactive trace UI)
 #   * Tempo   (long-term trace store, Grafana-native)
 #   * the SZL custom Khipu exporter (writes DSSE-bound Khipu receipts)
