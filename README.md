@@ -6,6 +6,16 @@
 [![tests](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml/badge.svg)](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml)
 &nbsp;Doctrine **v11 LOCKED** · 749 / 14 / 163 · SLSA L1 honest · DOI [10.5281/zenodo.19944926](https://doi.org/10.5281/zenodo.19944926)
 
+> **📦 Canonical OTel package (Wave D consolidation).** This standalone repository is the
+> **canonical source of truth** for the Λ-signed OTel exporter. The monorepo copy at
+> [`platform/services/vsp-otel`](https://github.com/szl-holdings/platform/tree/main/services/vsp-otel)
+> is a **non-canonical partial mirror** (it carries `DEPRECATED.md` pointing here) and does
+> **not** contain the deployable collector shipped here (`collector/`, `lambda_gate.py`,
+> `dsse.py`, `stats.py`, Helm chart). Platform should depend on the published `vsp-otel`
+> package rather than mirroring it. An **archived** `szl-otel-mesh` repo is also superseded by
+> this repo. Repos are **not deleted** — archival is a later founder step. Λ = **Conjecture 1**
+> (advisory) is preserved verbatim.
+
 ---
 
 `vsp-otel` is an **OTLP/HTTP collector exporter shim**: any OpenTelemetry-instrumented
