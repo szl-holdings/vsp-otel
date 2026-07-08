@@ -29,6 +29,7 @@ import math
 import os
 from dataclasses import dataclass, field
 from typing import Mapping, Sequence
+from urllib.parse import urlparse
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +106,82 @@ class VSPExporterConfig:
                 hdrs[k.strip()] = v.strip()
         return cls(headers=hdrs)
 
+    def validate(self) -> "VSPExporterConfig":
+        """Fail-closed validation of the exporter's collector target.
+
+        HONESTY: a configured endpoint STRING is *not* proof that a real
+        collector exists — but an endpoint that is empty, malformed, or
+        self-inconsistent is proof that one does **not**. We reject those up
+        front (fail-closed) rather than handing a hollow target to the OTLP
+        exporter, which would silently drop every span and let a service *claim*
+        span provenance it never actually exported.
+
+        Checks (first failure wins, with a specific, actionable message):
+
+        * endpoint is non-empty (an empty endpoint is not a collector);
+        * if a URL scheme is present it is ``http`` / ``https`` and carries a
+          host (``ftp://…`` / ``http://`` alone can never reach a collector);
+        * scheme⇄``insecure`` are consistent — an ``https://`` target with
+          ``insecure=True`` would send plaintext to a TLS port (and an
+          ``http://`` target with ``insecure=False`` would attempt TLS against a
+          plaintext port), silently dropping every span;
+        * ``timeout_s`` is a finite, strictly-positive number of seconds.
+
+        Scheme-less ``host[:port]`` endpoints (a valid OTLP/gRPC form, e.g.
+        ``collector:4317``) are accepted; only the presence of a host is
+        required in that case.
+
+        Returns ``self`` on success so calls can be chained; raises
+        ``ValueError`` on the first inconsistency.
+        """
+        ep = (self.endpoint or "").strip()
+        if not ep:
+            raise ValueError(
+                "OTLP endpoint is empty — refusing to build an exporter with no "
+                "collector target (an empty endpoint is not a collector)."
+            )
+
+        if "://" in ep:
+            parsed = urlparse(ep)
+            scheme = parsed.scheme.lower()
+            if scheme not in ("http", "https"):
+                raise ValueError(
+                    f"OTLP endpoint scheme {scheme!r} is not routable to a "
+                    f"collector — expected 'http' or 'https' (got {ep!r})."
+                )
+            if not parsed.hostname:
+                raise ValueError(
+                    f"OTLP endpoint {ep!r} has a scheme but no host — "
+                    "not a collector target."
+                )
+            if scheme == "https" and self.insecure:
+                raise ValueError(
+                    "Inconsistent OTLP config: endpoint is 'https://' (TLS) but "
+                    "insecure=True (plaintext). Set insecure=False or use "
+                    "'http://'."
+                )
+            if scheme == "http" and not self.insecure:
+                raise ValueError(
+                    "Inconsistent OTLP config: endpoint is 'http://' (plaintext) "
+                    "but insecure=False (TLS demanded). Set insecure=True or use "
+                    "'https://'."
+                )
+        else:
+            # Scheme-less host[:port]; strip an optional :port and /path.
+            host = ep.split("/", 1)[0].rsplit(":", 1)[0]
+            if not host:
+                raise ValueError(
+                    f"OTLP endpoint {ep!r} has no host — not a collector target."
+                )
+
+        if not math.isfinite(self.timeout_s) or self.timeout_s <= 0:
+            raise ValueError(
+                "OTLP timeout must be a finite, positive number of seconds, got "
+                f"{self.timeout_s!r}."
+            )
+
+        return self
+
 
 class VSPSpanExporter:
     """Decorator over the upstream OTLP gRPC exporter.
@@ -156,11 +233,16 @@ def build_exporter(config: VSPExporterConfig | None = None,
 
     Raises
     ------
+    ValueError
+        If the resolved configuration does not describe a usable collector
+        target (empty / malformed / self-inconsistent endpoint, or a non-finite
+        / non-positive timeout). Fail-closed: we never build an exporter aimed at
+        nothing, which would drop spans silently (HONESTY OVER CHECKLIST).
     RuntimeError
         If ``inner`` is not supplied and the upstream OTLP gRPC package is not
         installed. We raise rather than silently no-op (HONESTY OVER CHECKLIST).
     """
-    cfg = config or VSPExporterConfig.from_env()
+    cfg = (config or VSPExporterConfig.from_env()).validate()
     if inner is None:
         try:
             from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
