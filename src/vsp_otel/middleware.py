@@ -93,6 +93,7 @@ def install(app: Any = None, config: VSPConfig | None = None,
     otlp_ok = False
     sdk_ok = False
     vsp_exporter = None
+    otlp_reason: Optional[str] = None
     try:
         from opentelemetry import trace
         from opentelemetry.sdk.resources import Resource
@@ -115,6 +116,14 @@ def install(app: Any = None, config: VSPConfig | None = None,
             otlp_ok = True
         except RuntimeError:
             otlp_ok = False  # HONEST: OTLP package absent; spans still chained
+            otlp_reason = ("OTLP gRPC exporter ABSENT (package not installed; "
+                           "spans chained but not exported)")
+        except ValueError as e:
+            # HONEST: the endpoint does not describe a usable collector target.
+            # We do NOT wire an exporter aimed at nothing — that would let the
+            # organ *claim* export it cannot perform. Fail-closed to no-export.
+            otlp_ok = False
+            otlp_reason = f"OTLP exporter NOT wired — invalid/inconsistent config: {e}"
         trace.set_tracer_provider(provider)
     except ImportError:
         sdk_ok = False
@@ -130,7 +139,7 @@ def install(app: Any = None, config: VSPConfig | None = None,
 
     endpoints_ok = _register_endpoints(app, cfg, chain, dsse_proc, vsp_exporter)
 
-    note = _build_note(sdk_ok, otlp_ok, fastapi_ok)
+    note = _build_note(sdk_ok, otlp_ok, fastapi_ok, otlp_reason)
     return VSPStatus(
         enabled=sdk_ok or endpoints_ok,
         otlp_exporter=otlp_ok,
@@ -142,13 +151,17 @@ def install(app: Any = None, config: VSPConfig | None = None,
     )
 
 
-def _build_note(sdk_ok: bool, otlp_ok: bool, fastapi_ok: bool) -> str:
+def _build_note(sdk_ok: bool, otlp_ok: bool, fastapi_ok: bool,
+                otlp_reason: Optional[str] = None) -> str:
     if not sdk_ok:
         return ("OpenTelemetry SDK not installed — VSP degraded to Khipu-chain "
                 "endpoints only (HONEST no-op for tracing).")
     parts = ["OTel SDK wired; DSSE/Khipu processor active"]
-    parts.append("OTLP gRPC exporter ACTIVE" if otlp_ok
-                 else "OTLP gRPC exporter ABSENT (spans chained but not exported)")
+    if otlp_ok:
+        parts.append("OTLP gRPC exporter ACTIVE")
+    else:
+        parts.append(otlp_reason or
+                     "OTLP gRPC exporter ABSENT (spans chained but not exported)")
     parts.append("FastAPI auto-instrumented" if fastapi_ok
                  else "FastAPI instrumentation not available")
     return "; ".join(parts) + "."

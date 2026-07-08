@@ -93,3 +93,100 @@ def test_config_from_env(monkeypatch):
     assert cfg.endpoint == "http://collector:4317"
     assert cfg.headers["x-api-key"] == "abc"
     assert cfg.headers["team"] == "mesh"
+
+
+# ---------------------------------------------------------------------------
+# Fail-closed config validation (adversarial).
+#
+# HONESTY: a configured endpoint STRING is not proof a collector exists — but an
+# empty / malformed / self-inconsistent endpoint is proof one does NOT. These
+# tests pin the fail-closed behaviour so a service can never *claim* span export
+# it is not actually wired to perform.
+# ---------------------------------------------------------------------------
+import math  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+def test_validate_accepts_ordinary_endpoints():
+    # Scheme-ful http (plaintext + insecure) and scheme-less host:port are both
+    # legitimate OTLP/gRPC targets and must pass unchanged.
+    assert VSPExporterConfig(endpoint="http://collector:4317",
+                             insecure=True).validate().endpoint \
+        == "http://collector:4317"
+    # Scheme-less host[:port] — a valid gRPC form that urlparse mis-reads as a
+    # scheme; validation must NOT reject it (regression guard).
+    VSPExporterConfig(endpoint="collector:4317", insecure=True).validate()
+    VSPExporterConfig(endpoint="tempo.observability.svc:4317").validate()
+    # TLS endpoint with insecure=False is consistent and allowed.
+    VSPExporterConfig(endpoint="https://collector:4317", insecure=False).validate()
+
+
+def test_validate_rejects_empty_endpoint():
+    with pytest.raises(ValueError) as ei:
+        VSPExporterConfig(endpoint="").validate()
+    assert "empty" in str(ei.value).lower()
+    # whitespace-only is also empty
+    with pytest.raises(ValueError):
+        VSPExporterConfig(endpoint="   ").validate()
+
+
+def test_validate_rejects_non_http_scheme():
+    with pytest.raises(ValueError) as ei:
+        VSPExporterConfig(endpoint="ftp://collector:4317").validate()
+    assert "scheme" in str(ei.value).lower()
+
+
+def test_validate_rejects_scheme_without_host():
+    with pytest.raises(ValueError) as ei:
+        VSPExporterConfig(endpoint="http://", insecure=True).validate()
+    assert "host" in str(ei.value).lower()
+    with pytest.raises(ValueError):
+        VSPExporterConfig(endpoint="http://:4317", insecure=True).validate()
+
+
+def test_validate_rejects_tls_scheme_insecure_mismatch():
+    # https target but plaintext requested — would silently drop every span.
+    with pytest.raises(ValueError) as ei:
+        VSPExporterConfig(endpoint="https://collector:4317",
+                          insecure=True).validate()
+    assert "inconsistent" in str(ei.value).lower()
+    # http target but TLS demanded — the mirror inconsistency.
+    with pytest.raises(ValueError):
+        VSPExporterConfig(endpoint="http://collector:4317",
+                          insecure=False).validate()
+
+
+def test_validate_rejects_bad_timeout():
+    for bad in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            VSPExporterConfig(endpoint="http://c:4317", insecure=True,
+                              timeout_s=bad).validate()
+    # a finite positive timeout is fine
+    assert math.isfinite(
+        VSPExporterConfig(endpoint="http://c:4317", insecure=True,
+                          timeout_s=5.0).validate().timeout_s)
+
+
+def test_build_exporter_fails_closed_on_empty_endpoint():
+    """Factory refuses to build an exporter aimed at nothing (fail-closed).
+
+    Validation runs before any inner exporter is constructed, so an unusable
+    endpoint is rejected regardless of transport availability.
+    """
+    with pytest.raises(ValueError):
+        build_exporter(VSPExporterConfig(endpoint=""))
+
+
+def test_install_degrades_honestly_on_invalid_config():
+    """middleware.install must NOT raise on a bad endpoint; it degrades to
+    no-export and says so honestly (never claims export it cannot do)."""
+    pytest.importorskip("opentelemetry.sdk.trace")
+    import vsp_otel.middleware as mw
+
+    cfg = mw.VSPConfig(otlp=VSPExporterConfig(endpoint=""))
+    status = mw.install(app=None, config=cfg)
+
+    assert status.otlp_exporter is False
+    note = status.note.lower()
+    assert "invalid" in note or "inconsistent" in note
