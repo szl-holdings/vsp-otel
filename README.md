@@ -96,7 +96,7 @@ geometric-mean gate. `/metrics` exposed `vsp_spans_total`, `vsp_lambda_floor`,
 
 ## Architecture in context
 
-`vsp-otel` (L4) signs and forwards spans that conform to the `uds-mesh` (L5) schemas;
+`vsp-otel` (L4) signs and forwards spans that conform to the `szl-otel-mesh` (L5) schemas;
 the receipts it stamps are validated by `hatun-mcp` (L6) `validate-receipt-against-doctrine`.
 
 ---
