@@ -105,3 +105,7 @@ the receipts it stamps are validated by `hatun-mcp` (L6) `validate-receipt-again
 
 Signed-off-by: Yachay <yachay@szlholdings.ai>
 Co-Authored-By: Perplexity Computer Agent <agent@perplexity.ai>
+
+---
+
+**Explore the SZL estate:** [a11oy console](https://a-11-oy.com) · [LLM Router](https://github.com/szl-holdings/szl-router) · [Receipt format spec](https://github.com/szl-holdings/governed-receipt-spec) · [Lean proofs](https://github.com/szl-holdings/lutar-lean) · [Docs](https://github.com/szl-holdings/docs-site) · [🤗 SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS)
