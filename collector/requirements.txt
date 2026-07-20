@@ -1,5 +1,5 @@
 # vsp-otel collector exporter shim runtime deps
-fastapi==0.139.0
+fastapi==0.139.2
 uvicorn[standard]==0.51.0
 cryptography==49.0.0
 # stdlib-only fallback path needs none of the above; these enable the FastAPI
