@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "eslint": "^10.7.0",
-    "@typescript-eslint/parser": "^8.63.0"
+    "@typescript-eslint/parser": "^8.64.0"
   },
   "pnpm": {
     "overrides": {
