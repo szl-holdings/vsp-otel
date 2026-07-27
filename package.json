@@ -7,8 +7,8 @@
     "lint": "eslint runtime/src --ext .ts"
   },
   "devDependencies": {
-    "eslint": "^10.7.0",
-    "@typescript-eslint/parser": "^8.64.0"
+    "eslint": "^10.8.0",
+    "@typescript-eslint/parser": "^8.65.0"
   },
   "pnpm": {
     "overrides": {
