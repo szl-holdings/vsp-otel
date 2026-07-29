@@ -52,13 +52,9 @@ updates:
         patterns:
           - "*"
 
-  # npm / Node dependencies
+  # npm / Node dependencies. The root pnpm workspace owns runtime and stubs.
   - package-ecosystem: "npm"
-    directories:
-      - "/"
-      - "/runtime"
-      - "/stubs/ouroboros-lambda-gate"
-      - "/stubs/ouroboros-types"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
