@@ -44,7 +44,7 @@ spec:
                   key: signing.pem
             {{- end }}
           readinessProbe:
-            httpGet: { path: /healthz, port: otlp-http }
+            httpGet: { path: /readyz, port: otlp-http }
             initialDelaySeconds: 3
           livenessProbe:
             httpGet: { path: /healthz, port: otlp-http }

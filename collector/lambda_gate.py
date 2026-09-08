@@ -24,6 +24,8 @@ from typing import Any
 
 # a11oy doctrine constant — the production Λ floor for vsp-otel.
 LAMBDA_FLOOR = float(os.environ.get("LAMBDA_FLOOR", "0.90"))
+if not math.isfinite(LAMBDA_FLOOR) or not 0.90 <= LAMBDA_FLOOR <= 1.0:
+    raise ValueError("LAMBDA_FLOOR must be finite and between 0.90 and 1.0")
 
 # A1–A5: the five axes the gate scores. (The full doctrine has A1–A14; the
 # span-level Λ-gate uses the five measurable-at-span-time axes.)
@@ -44,9 +46,8 @@ _AXIS_KEYS = {
     "a5_logical_coherence":    ("lambda.a5", "lambda.logical_coherence", "szl.a5"),
 }
 
-# Default axis value when an instrumented org omits an axis: the floor itself, so a
-# silent span neither passes for free nor is unfairly rejected below the floor.
-_DEFAULT_AXIS = LAMBDA_FLOOR
+# Missing or invalid evidence contributes zero and fails closed.
+_DEFAULT_AXIS = 0.0
 
 
 @dataclass
@@ -78,10 +79,13 @@ def axes_from_attributes(attrs: dict[str, Any]) -> dict[str, float]:
         for k in keys:
             if k in attrs:
                 try:
-                    val = float(attrs[k])
+                    val = float(attrs[k]) if not isinstance(attrs[k], bool) else 0.0
+                    if not math.isfinite(val) or not 0 <= val <= 1:
+                        val = 0.0
                     break
                 except (TypeError, ValueError):
-                    continue
+                    val = 0.0
+                    break
         out[axis] = _clamp01(val) if val is not None else _DEFAULT_AXIS
     return out
 
@@ -94,6 +98,8 @@ def compute_lambda(axes: dict[str, float]) -> float:
 
 
 def evaluate(attrs: dict[str, Any], floor: float = LAMBDA_FLOOR) -> GateResult:
+    if not math.isfinite(floor) or not 0.90 <= floor <= 1.0:
+        raise ValueError("Gate floor must be finite and between 0.90 and 1.0")
     axes = axes_from_attributes(attrs)
     lam = compute_lambda(axes)
     return GateResult(lambda_value=lam, axes=axes, passed=lam >= floor, floor=floor)

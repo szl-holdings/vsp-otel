@@ -25,6 +25,9 @@ dependencies = [
 fastapi = ["opentelemetry-instrumentation-fastapi>=0.46b0"]
 test = [
   "pytest>=8.0",
+  "fastapi>=0.115",
+  "httpx>=0.28",
+  "cryptography>=44",
   "grpcio>=1.60",
   "opentelemetry-instrumentation-fastapi>=0.46b0",
 ]
