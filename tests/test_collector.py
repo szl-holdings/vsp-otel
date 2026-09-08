@@ -102,11 +102,12 @@ def _otlp_span(trace_id, span_id, axes, start_ns=0, end_ns=1_000_000):
     }
 
 
-def test_process_otlp_accepts_and_rejects():
+def test_process_otlp_accepts_and_rejects(monkeypatch):
     # fresh module state
     import importlib
     from collector import app as appmod
     importlib.reload(appmod)
+    monkeypatch.setattr(appmod, "_forward", lambda payload: 1)
     payload = {"resourceSpans": [{"scopeSpans": [{"spans": [
         _otlp_span("t1", "s1", [0.97, 0.97, 0.97, 0.97, 0.97]),   # pass
         _otlp_span("t2", "s2", [0.5, 0.97, 0.97, 0.97, 0.97]),    # reject

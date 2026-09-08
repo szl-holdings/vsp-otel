@@ -2,6 +2,41 @@
 
 # vsp-otel
 
+## Restored collector contract
+
+The maintained `collector/` service accepts **OTLP/HTTP JSON** on `/v1/traces`.
+Its protocol is `application/json`; a default protobuf/gRPC exporter must use an
+appropriate bridge or the separate `src/vsp_otel` library. The HTTP collector
+returns 415 for protobuf instead of claiming unsupported interoperability.
+
+- Configure `VSP_FORWARD_ENDPOINT` with the downstream OTLP/HTTP JSON endpoint
+  and `VSP_SIGN_KEY_PEM` with an operator-managed ECDSA P-256 private key.
+  In Kubernetes use `signing.existingSecret` with key `signing.pem`; never commit
+  private key material. Keyless signing is **not implemented**.
+- `/healthz` reports process liveness. `/readyz` returns 503 until the downstream
+  endpoint and signing key are configured. Its 200 `CONFIGURED` status establishes
+  configuration, with the last delivery attempt reported separately; it does not
+  prove downstream availability or deployed source identity.
+- Missing, nonfinite, boolean, or out-of-range governance axes fail closed.
+  Clients supply axis evidence; aggregation does not independently establish it.
+- Every forwarded span carries `szl.dsse.receipt`: the complete verifiable DSSE
+  envelope. Its subject digest binds the original span, resource and scope through
+  canonical JSON of `{trace_id, span_id, name, span, resource, scope}`. The original
+  span excludes collector-added verdict and receipt attributes. Consumers must
+  verify the PAE signature against their configured trusted P-256 public key and
+  recompute this digest; a receipt hash alone is not signature verification.
+- A downstream transport error returns 503 so the caller can retry. Partial
+  governance/downstream rejections return per-request OTLP `rejectedSpans` counts.
+  The service has no durable queue or exactly-once guarantee; a lost downstream
+  acknowledgement can cause a duplicate on retry. There is no silent acceptance
+  when forwarding is unavailable.
+
+Run the bounded collector checks with
+`python -m pytest tests/test_collector.py tests/test_collector_delivery.py -q`.
+They use a real loopback downstream fixture and independently verify the receipt
+signature and input digest. Hosted CI, publication, cluster deployment and a live
+estate trace require their own evidence.
+
 **Layer 4 (Λ-gate exporter) of the SZL 7-layer architecture.**
 Λ-signed OpenTelemetry exporter for SZL audit fibers.
 
@@ -20,8 +55,8 @@
 
 ---
 
-`vsp-otel` is an **OTLP/HTTP collector exporter shim**: any OpenTelemetry-instrumented
-service can point its exporter at vsp-otel with **no code change**. For every span it
+`vsp-otel` is an **OTLP/HTTP JSON collector exporter shim**. A compatible JSON sender
+can target the collector endpoint. For every span it
 computes a governance Λ, rejects spans below the floor, DSSE-signs the survivors, and
 forwards them to your existing backend (Tempo / Jaeger / any OTLP collector).
 
@@ -37,7 +72,7 @@ forwards them to your existing backend (Tempo / Jaeger / any OTLP collector).
   - **`lambda_gate.py`** — Λ over span A1–A5 axes; **`LAMBDA_FLOOR = 0.90`** (the
     a11oy doctrine constant); fail-closed rejection.
   - **`dsse.py`** — DSSE in-toto attestation per accepted span (ECDSA P-256 /
-    HMAC dev; cosign keyless OIDC in production).
+    HMAC for direct local tests only; configured P-256 for HTTP ingestion).
   - **`stats.py`** — **Welford** online mean/variance for span latency +
     **HyperLogLog** for unique-trace cardinality.
   - **`app.py`** — `/v1/traces` (OTLP ingest), `/healthz`, `/metrics` (Prometheus).
@@ -88,9 +123,9 @@ geometric-mean gate. `/metrics` exposed `vsp_spans_total`, `vsp_lambda_floor`,
 
 ## Honest boundaries (disclosed, not hidden — HR-6)
 
-- **Cosign keyless** (Fulcio OIDC + Rekor inclusion) is **wired but lands with CI**
-  (Doctrine v12 §2); dev/CI uses ECDSA P-256 or an HMAC fallback. The DSSE envelope
-  shape and PAE v1 encoding are production-final.
+- **Cosign keyless** (Fulcio OIDC + Rekor inclusion) is **not implemented** by
+  the collector. Configured ECDSA P-256 signs HTTP traffic. Direct local HMAC
+  test signatures do not establish configured service readiness.
 - The Λ axis scores are supplied by the instrumented org as span attributes; vsp-otel
   aggregates and gates them — it does not itself infer A1–A5.
 

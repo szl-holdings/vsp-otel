@@ -86,3 +86,24 @@ docker run -p 4318:4318 -e VSP_FORWARD_ENDPOINT=http://tempo:4318/v1/traces \
 helm install vsp-otel ./deploy/helm/vsp-otel \
   --set forwardEndpoint=http://tempo.observability.svc:4318/v1/traces
 ```
+# Current collector integration contract
+
+`collector/` accepts OTLP/HTTP **JSON**, not protobuf or gRPC. The separate
+`src/vsp_otel` package retains its gRPC exporter. Any historical guidance below
+that assumes a default SDK can target this HTTP collector without protocol
+configuration must be read with that boundary.
+
+Set `VSP_FORWARD_ENDPOINT` and an operator-managed P-256 `VSP_SIGN_KEY_PEM`.
+The Helm `signing.existingSecret` setting reads the key from `signing.pem`.
+`GET /readyz` is a configuration gate; its `downstream_last_result` records
+the most recent delivery attempt separately. Missing configuration returns 503.
+`POST /v1/traces` returns 503 when delivery is not acknowledged, and callers
+must retain/retry their batch. Successful partial responses carry per-request
+`partialSuccess.rejectedSpans`; do not retry a partial response automatically.
+
+The downstream span includes a full `szl.dsse.receipt` envelope and its hash.
+Bind the original span/resource/scope using the README's canonical digest shape
+and verify the signature using your configured trusted P-256 public key.
+Keyless signing, a durable retry queue, and exactly-once delivery are unavailable.
+
+---

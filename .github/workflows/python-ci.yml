@@ -9,6 +9,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "collector/**"
       - "src/vsp_otel/**"
       - "tests/**"
       - "pyproject.toml"
@@ -17,6 +18,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "collector/**"
       - "src/vsp_otel/**"
       - "tests/**"
       - "pyproject.toml"

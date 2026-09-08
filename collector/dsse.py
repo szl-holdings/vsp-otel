@@ -5,10 +5,9 @@ Layer 4 crypto. Every span that passes the Λ-gate is wrapped in a DSSE envelope
 (PAE v1) over an in-toto v1 statement. Two signing modes:
 
   * dev/local      — real ECDSA P-256 (cryptography) or HMAC-SHA-256 fallback.
-  * cosign keyless — Sigstore Fulcio OIDC + Rekor transparency log (production).
-                     Disclosed boundary: keyless signing requires an OIDC token and
-                     network egress to Fulcio/Rekor; it is wired but lands in CI
-                     (Doctrine v12 §2). Modelled on the proved-where-proved Lean refs
+  * configured ECDSA P-256 — operator-managed key required for HTTP ingestion.
+                     Cosign keyless signing is not implemented. References below
+                     describe historical design context, not runtime proof:
                      Lutar.Round10.CryptoDSSE.dsse_classical_euf_cma (PR #179, 0 real
                      sorry) and Lutar.Round10.CryptoRekor.rekor_inclusion_completeness
                      (PR #179; soundness is an honest tagged sorry → Conjecture 1).
@@ -24,6 +23,7 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 import time
 from typing import Any, Optional
 
@@ -38,7 +38,6 @@ except Exception:  # pragma: no cover
     _CRYPTO = False
 
 PAYLOAD_TYPE = "application/vnd.in-toto+json"
-_HMAC_KEY = os.environ.get("VSP_HMAC_KEY", "szl-vsp-hmac-dev-v1").encode()
 
 
 def _pae(payload_type: str, payload: bytes) -> bytes:
@@ -78,10 +77,17 @@ class DsseSigner:
     def __init__(self, mode: Optional[str] = None) -> None:
         self.mode = mode or os.environ.get("VSP_SIGN_MODE", "auto")
         self._key = None
-        self._kid = "hmac-dev"
+        self._hmac_key = os.environ.get("VSP_HMAC_KEY", "").encode() or secrets.token_bytes(32)
+        self._kid = "hmac-local-" + hashlib.sha256(self._hmac_key).hexdigest()[:12]
+        self.configured_signing_key = False
+        if self.mode not in {"auto", "ecdsa", "hmac"}:
+            raise ValueError("Unsupported VSP_SIGN_MODE; keyless signing is not implemented")
         pem = os.environ.get("VSP_SIGN_KEY_PEM")
         if _CRYPTO and pem and self.mode in ("auto", "ecdsa"):
             self._key = load_pem_private_key(pem.encode(), password=None)
+            if not isinstance(self._key, ec.EllipticCurvePrivateKey) or not isinstance(self._key.curve, ec.SECP256R1):
+                raise ValueError("VSP_SIGN_KEY_PEM must contain an ECDSA P-256 private key")
+            self.configured_signing_key = True
             self._kid = "ecdsa-p256-" + hashlib.sha256(
                 self._key.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
             ).hexdigest()[:12]
@@ -97,7 +103,7 @@ class DsseSigner:
         if self._key is not None:
             sig = base64.b64encode(self._key.sign(pae, ec.ECDSA(hashes.SHA256()))).decode()
         else:
-            sig = base64.b64encode(hmac.new(_HMAC_KEY, pae, hashlib.sha256).digest()).decode()
+            sig = base64.b64encode(hmac.new(self._hmac_key, pae, hashlib.sha256).digest()).decode()
         return {
             "payloadType": PAYLOAD_TYPE,
             "payload": b64,

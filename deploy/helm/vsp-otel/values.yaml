@@ -13,10 +13,10 @@ lambdaFloor: "0.90"
 forwardEndpoint: "http://tempo.observability.svc:4318/v1/traces"
 
 signing:
-  mode: "auto"          # auto | ecdsa | cosign-keyless
+  mode: "ecdsa"         # HTTP ingestion requires a configured P-256 key
   # For ECDSA P-256, mount a PEM via the secret named below (key: signing.pem).
   existingSecret: ""    # e.g. vsp-otel-signing
-  # For cosign keyless (production), set OIDC + Fulcio/Rekor via env on the pod.
+  # Keyless signing is not implemented. Missing key leaves readiness BLOCKED.
 
 service:
   type: ClusterIP
