@@ -9,14 +9,14 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "^4.4.3",
+    "zod": "^4.5.4",
     "@szl/ouroboros-types": "workspace:*",
     "@szl/ouroboros-lambda-gate": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11",
-    "@types/node": "^26.2.0"
+    "vitest": "^5.0.0",
+    "@types/node": "^26.4.1"
   },
   "main": "./dist/exporter.js",
   "types": "./dist/exporter.d.ts",
