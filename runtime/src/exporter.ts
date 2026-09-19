@@ -205,7 +205,8 @@ export interface ExportResult {
 }
 
 export function exportSpans(spans: OtelSpan[]): ExportResult {
-  const signed = spans.map(signSpan);
+  // Do not pass Array.map's numeric index as signSpan's optional anchor.
+  const signed = spans.map((span) => signSpan(span));
   return {
     total:  signed.length,
     passed: signed.filter((s) => s.pass).length,

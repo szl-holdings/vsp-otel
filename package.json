@@ -1,14 +1,21 @@
 {
   "private": true,
   "name": "vsp-otel-workspace",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "build": "pnpm -C runtime build",
     "test": "pnpm -C runtime test",
     "lint": "eslint runtime/src --ext .ts"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "eslint": "^10.10.0",
-    "@typescript-eslint/parser": "^8.69.0"
+    "@typescript-eslint/parser": "8.70.0",
+    "globals": "17.12.0",
+    "typescript": "6.0.3"
   },
   "pnpm": {
     "overrides": {

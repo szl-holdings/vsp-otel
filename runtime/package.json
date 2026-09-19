@@ -1,6 +1,9 @@
 {
   "name": "@szl/vsp-otel",
   "version": "0.1.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "description": "SZL Holdings \u2014 Ouroboros runtime module",
   "type": "module",
   "license": "Apache-2.0",
@@ -9,14 +12,14 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "^4.5.4",
+    "zod": "4.6.2",
     "@szl/ouroboros-types": "workspace:*",
     "@szl/ouroboros-lambda-gate": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
+    "typescript": "6.0.3",
     "vitest": "^5.0.0",
-    "@types/node": "^26.4.1"
+    "@types/node": "26.5.1"
   },
   "main": "./dist/exporter.js",
   "types": "./dist/exporter.d.ts",
