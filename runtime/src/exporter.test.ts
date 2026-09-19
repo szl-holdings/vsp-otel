@@ -210,6 +210,11 @@ describe("exportSpans", () => {
     const result = exportSpans(spans);
     expect(result.total).toBe(2);
     expect(result.signed).toHaveLength(2);
+    for (const signed of result.signed) {
+      expect(signed.span.attributes["szl.anchor_formula.id"]).toBeUndefined();
+      expect(signed.span.attributes["szl.lean_theorem_ref"]).toBeUndefined();
+      expect(signed.span.attributes["szl.lean_commit_sha"]).toBeUndefined();
+    }
   });
 
   it("counts pass/fail correctly", () => {
