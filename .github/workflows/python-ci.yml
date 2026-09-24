@@ -7,31 +7,37 @@ name: Python CI
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+    - main
     paths:
-      - "collector/**"
-      - "src/vsp_otel/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - "Dockerfile"
-      - ".github/workflows/python-ci.yml"
+    - collector/**
+    - src/vsp_otel/**
+    - tests/**
+    - pyproject.toml
+    - Dockerfile
+    - .github/workflows/python-ci.yml
   push:
-    branches: [main]
+    branches:
+    - main
     paths:
-      - "collector/**"
-      - "src/vsp_otel/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - "Dockerfile"
-      - ".github/workflows/python-ci.yml"
-  workflow_dispatch:
-
+    - collector/**
+    - src/vsp_otel/**
+    - tests/**
+    - pyproject.toml
+    - Dockerfile
+    - .github/workflows/python-ci.yml
+  workflow_dispatch: null
+  merge_group:
+    types:
+    - checks_requested
+    branches:
+    - main
 permissions:
   contents: read
 
 concurrency:
   group: python-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'merge_group' }}
 
 jobs:
   test:
