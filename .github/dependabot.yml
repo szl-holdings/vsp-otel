@@ -15,7 +15,19 @@ updates:
     groups:
       actions:
         patterns:
-          - "*"
+        - '*'
+        update-types:
+        - minor
+        - patch
+        exclude-patterns:
+        - torch*
+        - transformers
+        - accelerate
+        - vllm
+        - unsloth*
+        - openai
+    cooldown:
+      default-days: 3
 
   # Python (pip) dependencies
   - package-ecosystem: "pip"
@@ -33,7 +45,22 @@ updates:
     groups:
       python-deps:
         patterns:
-          - "*"
+        - '*'
+        update-types:
+        - minor
+        - patch
+        exclude-patterns:
+        - torch*
+        - transformers
+        - accelerate
+        - vllm
+        - unsloth*
+        - openai
+    cooldown:
+      default-days: 7
+      semver-major-days: 21
+      semver-minor-days: 7
+      semver-patch-days: 3
 
   # Docker base images
   - package-ecosystem: "docker"
@@ -50,7 +77,19 @@ updates:
     groups:
       docker-deps:
         patterns:
-          - "*"
+        - '*'
+        update-types:
+        - minor
+        - patch
+        exclude-patterns:
+        - torch*
+        - transformers
+        - accelerate
+        - vllm
+        - unsloth*
+        - openai
+    cooldown:
+      default-days: 3
 
   # npm / Node dependencies. The root pnpm workspace owns runtime and stubs.
   - package-ecosystem: "npm"
@@ -67,4 +106,19 @@ updates:
     groups:
       npm-deps:
         patterns:
-          - "*"
+        - '*'
+        update-types:
+        - minor
+        - patch
+        exclude-patterns:
+        - torch*
+        - transformers
+        - accelerate
+        - vllm
+        - unsloth*
+        - openai
+    cooldown:
+      default-days: 7
+      semver-major-days: 21
+      semver-minor-days: 7
+      semver-patch-days: 3
