@@ -102,7 +102,7 @@ must retain/retry their batch. Successful partial responses carry per-request
 `partialSuccess.rejectedSpans`; do not retry a partial response automatically.
 
 The downstream span includes a full `szl.dsse.receipt` envelope and its hash.
-Bind the original span/resource/scope using the README's canonical digest shape
+Bind the original span/resource/scope using the README's RFC 8785 digest shape
 and verify the signature using your configured trusted P-256 public key.
 Keyless signing, a durable retry queue, and exactly-once delivery are unavailable.
 

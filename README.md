@@ -21,7 +21,11 @@ returns 415 for protobuf instead of claiming unsupported interoperability.
   Clients supply axis evidence; aggregation does not independently establish it.
 - Every forwarded span carries `szl.dsse.receipt`: the complete verifiable DSSE
   envelope. Its subject digest binds the original span, resource and scope through
-  canonical JSON of `{trace_id, span_id, name, span, resource, scope}`. The original
+  [RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785)
+  encoding of `{trace_id, span_id, name, span, resource, scope}`. New receipts use
+  predicate type `https://szlholdings.ai/attestations/lambda-gate/v2` and declare
+  `subject_canonicalization: "RFC8785"`; historical v1 subjects used Python JSON
+  serialization and must not be interpreted as v2. The original
   span excludes collector-added verdict and receipt attributes. Consumers must
   verify the PAE signature against their configured trusted P-256 public key and
   recompute this digest; a receipt hash alone is not signature verification.
@@ -68,7 +72,7 @@ forwards them to your existing backend (Tempo / Jaeger / any OTLP collector).
 ## Make it real — what landed
 
 - **`collector/`** — a deployable OTLP/HTTP collector exporter shim (FastAPI, with a
-  zero-dependency stdlib fallback):
+  stdlib HTTP fallback that still requires the pinned `rfc8785` package):
   - **`lambda_gate.py`** — Λ over span A1–A5 axes; **`LAMBDA_FLOOR = 0.90`** (the
     a11oy doctrine constant); fail-closed rejection.
   - **`dsse.py`** — DSSE in-toto attestation per accepted span (ECDSA P-256 /
