@@ -31,6 +31,8 @@ import urllib.parse
 from threading import RLock
 from typing import Any
 
+import rfc8785
+
 from .dsse import DsseSigner
 from .lambda_gate import LAMBDA_FLOOR, evaluate
 from .stats import HyperLogLog, Welford
@@ -75,6 +77,7 @@ def readiness() -> dict:
 
 
 def _validate_payload(payload: Any) -> None:
+    rfc8785.dumps(payload)  # Reject nonfinite numbers, unsafe integers and invalid Unicode.
     if not isinstance(payload, dict) or not isinstance(payload.get("resourceSpans", []), list):
         raise ValueError("Expected OTLP JSON object with resourceSpans array")
     for rs in payload.get("resourceSpans", []):
@@ -130,25 +133,21 @@ def process_otlp(payload: dict) -> dict:
     _validate_payload(payload)
     payload = copy.deepcopy(payload)
     request_counts = {"received": 0, "accepted": 0, "rejected": 0}
+    observations = []
     accepted_resource_spans: list[dict] = []
     for rs in payload.get("resourceSpans", []):
         kept_scope_spans = []
         for ss in rs.get("scopeSpans", []):
             kept_spans = []
             for span in ss.get("spans", []):
-                COUNTERS["received"] += 1
                 request_counts["received"] += 1
                 attrs = _otlp_attr_to_dict(span.get("attributes", []))
                 gate = evaluate(attrs)
                 tid = span.get("traceId", "")
-                if tid:
-                    TRACE_HLL.add(tid)
-                LATENCY.update(_span_latency_ms(span))
+                observations.append((tid, _span_latency_ms(span)))
                 if not gate.passed:
-                    COUNTERS["rejected"] += 1
                     request_counts["rejected"] += 1
                     continue
-                COUNTERS["accepted"] += 1
                 request_counts["accepted"] += 1
                 original = copy.deepcopy(span)
                 # attach Λ-gate attributes + DSSE attestation
@@ -180,19 +179,26 @@ def process_otlp(payload: dict) -> dict:
         if kept_scope_spans:
             accepted_resource_spans.append({**rs, "scopeSpans": kept_scope_spans})
 
+    with STATE_LOCK:
+        for key, value in request_counts.items():
+            COUNTERS[key] += value
+        for tid, latency in observations:
+            if tid:
+                TRACE_HLL.add(tid)
+            LATENCY.update(latency)
+
     forwarded = 0
     if accepted_resource_spans:
         forwarded = _forward({"resourceSpans": accepted_resource_spans})
-        COUNTERS["forwarded"] += forwarded
+        with STATE_LOCK:
+            COUNTERS["forwarded"] += forwarded
 
+    with STATE_LOCK:
+        snapshot = {**COUNTERS, "unique_traces_est": TRACE_HLL.count(),
+                    "latency_ms": LATENCY.snapshot()}
     return {
-        "received": COUNTERS["received"],
-        "accepted": COUNTERS["accepted"],
-        "rejected": COUNTERS["rejected"],
-        "forwarded": COUNTERS["forwarded"],
+        **snapshot,
         "lambda_floor": LAMBDA_FLOOR,
-        "unique_traces_est": TRACE_HLL.count(),
-        "latency_ms": LATENCY.snapshot(),
         "request": {**request_counts, "forwarded": forwarded},
     }
 
@@ -258,8 +264,7 @@ def trace_response(raw: bytes, content_type: str) -> tuple[int, dict]:
     if not readiness()["ready"]:
         return 503, {"error": "Collector is not configured", "szl": readiness()}
     try:
-        with STATE_LOCK:
-            summary = process_otlp(payload)
+        summary = process_otlp(payload)
     except ForwardUnavailable:
         return 503, {"error": "Downstream delivery was not acknowledged; retry is required"}
     except (ValueError, TypeError, OverflowError):
@@ -270,14 +275,17 @@ def trace_response(raw: bytes, content_type: str) -> tuple[int, dict]:
 
 
 def metrics_text() -> str:
-    s = LATENCY.snapshot()
+    with STATE_LOCK:
+        s = LATENCY.snapshot()
+        counters = dict(COUNTERS)
+        unique_traces = TRACE_HLL.count()
     return (
         f"# HELP vsp_spans_total Spans seen by the Λ-gate by verdict\n"
         f"# TYPE vsp_spans_total counter\n"
-        f'vsp_spans_total{{verdict="received"}} {COUNTERS["received"]}\n'
-        f'vsp_spans_total{{verdict="accepted"}} {COUNTERS["accepted"]}\n'
-        f'vsp_spans_total{{verdict="rejected"}} {COUNTERS["rejected"]}\n'
-        f'vsp_spans_total{{verdict="forwarded"}} {COUNTERS["forwarded"]}\n'
+        f'vsp_spans_total{{verdict="received"}} {counters["received"]}\n'
+        f'vsp_spans_total{{verdict="accepted"}} {counters["accepted"]}\n'
+        f'vsp_spans_total{{verdict="rejected"}} {counters["rejected"]}\n'
+        f'vsp_spans_total{{verdict="forwarded"}} {counters["forwarded"]}\n'
         f"# HELP vsp_lambda_floor Configured Λ floor\n"
         f"# TYPE vsp_lambda_floor gauge\n"
         f"vsp_lambda_floor {LAMBDA_FLOOR}\n"
@@ -286,7 +294,7 @@ def metrics_text() -> str:
         f"vsp_span_latency_ms_mean {s['mean']}\n"
         f"# HELP vsp_unique_traces_estimate HyperLogLog distinct trace-id count\n"
         f"# TYPE vsp_unique_traces_estimate gauge\n"
-        f"vsp_unique_traces_estimate {TRACE_HLL.count()}\n"
+        f"vsp_unique_traces_estimate {unique_traces}\n"
     )
 
 
@@ -329,7 +337,7 @@ def build_fastapi():
     return api
 
 
-# stdlib fallback so the shim runs with zero deps
+# stdlib HTTP fallback; RFC 8785 canonicalization is still required.
 def run_stdlib(host: str = "0.0.0.0", port: int = 4318):  # pragma: no cover
     from http.server import BaseHTTPRequestHandler, HTTPServer
 

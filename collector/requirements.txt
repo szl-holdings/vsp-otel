@@ -2,5 +2,6 @@
 fastapi==0.141.1
 uvicorn[standard]==0.53.0
 cryptography==50.0.1
-# stdlib-only fallback path needs none of the above; these enable the FastAPI
+rfc8785==0.1.4
+# The stdlib HTTP fallback still requires rfc8785; the other dependencies enable the FastAPI
 # OTLP/HTTP server + ECDSA P-256 DSSE signing in production.

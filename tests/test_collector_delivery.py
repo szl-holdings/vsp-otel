@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from collector import app as collector
 from collector import lambda_gate
-from collector.dsse import DsseSigner, _pae
+from collector.dsse import DsseSigner, _pae, _in_toto_statement
 
 
 def payload():
@@ -90,6 +90,48 @@ def test_real_delivery_carries_verifiable_complete_span_and_context(configured, 
     assert json.loads(signed)["subject"][0]["digest"]["sha256"] == digest
     assert attrs["szl.dsse.receipt_hash"]["stringValue"] == hashlib.sha256(signed).hexdigest()
     assert len(span["attributes"]) == len(attrs)  # no duplicate axis keys
+
+
+def test_concurrent_deliveries_do_not_hold_global_state_lock(configured, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    monkeypatch.setattr(collector, "FORWARD_ENDPOINT", "http://127.0.0.1:4318/v1/traces")
+    rendezvous = threading.Barrier(4)
+
+    def forward(_batch):
+        # All requests must reach downstream I/O together. The old global lock
+        # broke this barrier before any other request could enter forwarding.
+        rendezvous.wait(timeout=2)
+        return 1
+
+    monkeypatch.setattr(collector, "_forward", forward)
+    raw = json.dumps(payload()).encode()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        responses = list(executor.map(lambda _: collector.trace_response(raw, "application/json"), range(4)))
+    assert all(code == 200 and body["szl"]["request"]["forwarded"] == 1 for code, body in responses)
+    assert collector.COUNTERS == {"received": 4, "accepted": 4, "rejected": 0, "forwarded": 4}
+
+
+def test_rfc8785_subject_has_portable_unicode_float_and_sorting_vector():
+    subject = {"trace_id": "a", "span_id": "b", "name": "é", "sample": 1e-7,
+               "negative_zero": -0.0, "keys": {"\ue000": 2, "😀": 1}}
+    # Independent fixed RFC 8785 vector: UTF-8 strings, UTF-16 key ordering,
+    # ECMAScript number formatting, and negative zero normalized to zero.
+    expected = '{"keys":{"😀":1,"\ue000":2},"name":"é","negative_zero":0,"sample":1e-7,"span_id":"b","trace_id":"a"}'.encode()
+    statement = _in_toto_statement(subject, {"lambda_value": 0.97, "floor": 0.90,
+                                           "passed": True, "axes": [0.97] * 5})
+    assert statement["subject"][0]["digest"]["sha256"] == hashlib.sha256(expected).hexdigest()
+    assert statement["predicate"]["subject_canonicalization"] == "RFC8785"
+    assert statement["predicateType"].endswith("/v2")
+
+
+@pytest.mark.parametrize("invalid", [float("nan"), float("inf"), 2 ** 60, "\ud800"])
+def test_noncanonical_subject_values_rejected_before_signing(configured, downstream, invalid):
+    body = payload()
+    body["resourceSpans"][0]["resource"]["invalid"] = invalid
+    code, _ = collector.trace_response(json.dumps(body).encode(), "application/json")
+    assert code == 400 and downstream["received"] == []
+    assert collector.COUNTERS["received"] == 0
 
 
 def test_downstream_failure_is_retryable_and_not_forwarded(configured, downstream):

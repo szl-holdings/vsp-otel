@@ -27,6 +27,8 @@ import secrets
 import time
 from typing import Any, Optional
 
+import rfc8785
+
 try:
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import ec
@@ -51,15 +53,14 @@ def _in_toto_statement(span: dict, gate: dict) -> dict:
     span_id = span.get("span_id", "")
     trace_id = span.get("trace_id", "")
     name = span.get("name", "")
-    digest = hashlib.sha256(
-        json.dumps(span, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    digest = hashlib.sha256(rfc8785.dumps(span)).hexdigest()
     return {
         "_type": "https://in-toto.io/Statement/v1",
         "subject": [{"name": f"otel-span:{trace_id}/{span_id}",
                      "digest": {"sha256": digest}}],
-        "predicateType": "https://szlholdings.ai/attestations/lambda-gate/v1",
+        "predicateType": "https://szlholdings.ai/attestations/lambda-gate/v2",
         "predicate": {
+            "subject_canonicalization": "RFC8785",
             "span_name": name,
             "lambda": gate["lambda_value"],
             "floor": gate.get("floor"),
