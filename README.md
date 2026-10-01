@@ -1,3 +1,21 @@
+[![PyPI](https://img.shields.io/pypi/v/vsp-otel)](https://pypi.org/project/vsp-otel/) [![Python](https://img.shields.io/pypi/pyversions/vsp-otel)](https://pypi.org/project/vsp-otel/) [![CI](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml/badge.svg)](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
+## Quickstart
+
+```bash
+pip install vsp-otel
+```
+
+```python
+from vsp_otel import install, VSPConfig
+
+# one-call FastAPI middleware: every request's spans become hash-chained,
+# DSSE-signed evidence, exported over OTLP.
+install(app, VSPConfig(service_name="my-service"))
+```
+
+---
+
 > **SZL Holdings** · Doctrine v11 · Λ = Conjecture 1 (advisory, never "green"/theorem) · canonical [a-11-oy.com](https://a-11-oy.com)
 
 # vsp-otel
