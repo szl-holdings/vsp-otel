@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # vsp-otel — Verifiable Span Provenance via OpenTelemetry (Python operational layer)
 # Doctrine v11 LOCKED — 749/14/163 · Λ = Conjecture 1
+
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -35,6 +36,9 @@ test = [
 
 [project.urls]
 Homepage = "https://github.com/szl-holdings/vsp-otel"
+Source = "https://github.com/szl-holdings/vsp-otel"
+Issues = "https://github.com/szl-holdings/vsp-otel/issues"
+Changelog = "https://github.com/szl-holdings/vsp-otel/releases"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -42,3 +46,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.szl.release]
+import_names = ["vsp_otel"] # wheel top-level import names; the release gate fails if the built wheel differs
