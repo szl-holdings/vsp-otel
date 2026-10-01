@@ -1,4 +1,4 @@
-[![PyPI](https://img.shields.io/pypi/v/vsp-otel)](https://pypi.org/project/vsp-otel/) [![Python](https://img.shields.io/pypi/pyversions/vsp-otel)](https://pypi.org/project/vsp-otel/) [![CI](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml/badge.svg)](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/vsp-otel)](https://pypi.org/project/vsp-otel/) [![Python](https://img.shields.io/pypi/pyversions/vsp-otel)](https://pypi.org/project/vsp-otel/) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/szl-holdings/vsp-otel/badge)](https://scorecard.dev/viewer/?uri=github.com/szl-holdings/vsp-otel) [![CI](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml/badge.svg)](https://github.com/szl-holdings/vsp-otel/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 ## Quickstart
 
