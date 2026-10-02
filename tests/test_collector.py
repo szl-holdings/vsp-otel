@@ -8,6 +8,8 @@ Run: pytest tests/ -v
 """
 from __future__ import annotations
 
+import math
+
 import importlib.util
 import os
 import sys
@@ -47,6 +49,36 @@ def test_geometric_mean_penalises_one_bad_axis():
              "lambda.a4": 0.99, "lambda.a5": 0.10}
     r = lambda_gate.evaluate(attrs)
     assert r.passed is False
+
+
+def test_zero_axis_is_an_exact_zero_veto():
+    # szl.lambda/v1: Λ is exactly 0.0 iff some axis is 0. The old 1e-12 floor
+    # returned 0.0038852358499261363 here, a compensatory non-veto.
+    attrs = {f"lambda.a{i}": 0.97 for i in range(1, 6)}
+    attrs["lambda.a5"] = 0.0
+    r = lambda_gate.evaluate(attrs)
+    assert r.lambda_value == 0.0
+    assert r.passed is False
+
+
+def test_missing_evidence_is_an_exact_zero_veto():
+    # Missing or invalid (NaN, bool, out-of-range) evidence contributes 0.0 and
+    # must therefore veto exactly, not approximately.
+    for bad in ({}, {"lambda.a1": float("nan")}, {"lambda.a1": True}, {"lambda.a1": 1.5}):
+        attrs = {f"lambda.a{i}": 0.97 for i in range(2, 6)}
+        attrs.update(bad)
+        assert lambda_gate.evaluate(attrs).lambda_value == 0.0
+
+
+def test_no_floor_no_clamp_geometric_mean():
+    # Equal axes: the geometric mean is the axis value itself.
+    attrs = {f"lambda.a{i}": 0.97 for i in range(1, 6)}
+    assert math.isclose(lambda_gate.compute_lambda(lambda_gate.axes_from_attributes(attrs)), 0.97, rel_tol=1e-12)
+    # All ones is exactly 1.0 with no clamp needed; a tiny axis stays tiny, not floored.
+    ones = {f"lambda.a{i}": 1.0 for i in range(1, 6)}
+    assert lambda_gate.compute_lambda(lambda_gate.axes_from_attributes(ones)) == 1.0
+    tiny = dict(ones, **{"lambda.a3": 1e-300})
+    assert 0.0 < lambda_gate.compute_lambda(lambda_gate.axes_from_attributes(tiny)) < 1e-59
 
 
 # ── Welford ────────────────────────────────────────────────────────────────────
