@@ -5,7 +5,8 @@ Layer 4 (Λ-gate exporter) of the SZL 7-layer architecture. Pure-stdlib so it ru
 in the collector hot path with no heavy deps.
 
 Λ over a span's A1–A5 axes (a11oy doctrine constant LAMBDA_FLOOR = 0.90):
-  Λ(span) = geometric mean of the per-axis scores, clamped to [0,1].
+  Λ(span) = equal-weight geometric mean of the per-axis scores; exactly 0.0
+  if any axis is 0.0 (szl.lambda/v1 zero veto). No floor, no clamp.
 Spans with Λ < LAMBDA_FLOOR are rejected (fail-closed).
 
 Λ is **Conjecture 1**, never a theorem. The geometric-mean aggregation mirrors the
@@ -91,10 +92,21 @@ def axes_from_attributes(attrs: dict[str, Any]) -> dict[str, float]:
 
 
 def compute_lambda(axes: dict[str, float]) -> float:
-    """Λ = geometric mean of the A1–A5 axes, clamped to [0,1] (Λ Conjecture 1)."""
-    vals = [max(1e-12, axes[a]) for a in A_AXES]
-    log_mean = sum(math.log(v) for v in vals) / len(vals)
-    return _clamp01(math.exp(log_mean))
+    """Λ = equal-weight geometric mean of the A1–A5 axes, per szl.lambda/v1.
+
+    Non-compensatory: an axis at 0.0 yields exactly 0.0, the veto. No floor and
+    no clamp. The previous ``max(1e-12, x)`` floor turned a zeroed axis into
+    Λ = 0.00389 and a NaN axis (coerced to 0.0 upstream) into the same number,
+    which made the aggregator compensatory by construction and the veto
+    indistinguishable from a very low score. Inputs are already validated into
+    [0, 1] by ``axes_from_attributes``; ``fsum`` keeps the result invariant
+    under axis order. Λ remains Conjecture 1: this is a policy gate, not proof.
+    """
+    vals = [axes[a] for a in A_AXES]
+    if any(v == 0.0 for v in vals):
+        return 0.0
+    weight = 1.0 / len(vals)
+    return math.exp(math.fsum(weight * math.log(v) for v in vals))
 
 
 def evaluate(attrs: dict[str, Any], floor: float = LAMBDA_FLOOR) -> GateResult:
