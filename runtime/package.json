@@ -12,14 +12,14 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "4.6.5",
+    "zod": "4.6.7",
     "@szl/ouroboros-types": "workspace:*",
     "@szl/ouroboros-lambda-gate": "workspace:*"
   },
   "devDependencies": {
     "@typescript/native": "npm:typescript@7.0.2",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vitest": "^5.0.3",
+    "vitest": "^5.0.5",
     "@types/node": "26.6.5"
   },
   "main": "./dist/exporter.js",
