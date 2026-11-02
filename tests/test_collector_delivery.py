@@ -165,6 +165,30 @@ def test_gate_rejects_omitted_axis_without_forwarding(configured, downstream):
     assert downstream["received"] == []
 
 
+@pytest.mark.parametrize("field", ["doubleValue", "intValue"])
+@pytest.mark.parametrize("value", [True, False])
+def test_numeric_boolean_axis_rejected_before_signing(configured, downstream, monkeypatch, field, value):
+    data = payload()
+    spans = data["resourceSpans"][0]["scopeSpans"][0]["spans"]
+    invalid = copy.deepcopy(spans[0])
+    invalid["attributes"][0]["value"] = {field: value}
+    spans.append(invalid)  # the whole batch must be admitted before signing even its valid prefix
+    signed = []
+    sign_span = collector.SIGNER.sign_span
+
+    def observe_signing(*args, **kwargs):
+        signed.append(True)
+        return sign_span(*args, **kwargs)
+
+    monkeypatch.setattr(collector.SIGNER, "sign_span", observe_signing)
+    with TestClient(collector.build_fastapi()) as client:
+        response = client.post("/v1/traces", json=data)
+    assert response.status_code == 400
+    assert signed == []
+    assert downstream["received"] == []
+    assert collector.COUNTERS == {"received": 0, "accepted": 0, "rejected": 0, "forwarded": 0}
+
+
 @pytest.mark.parametrize("value", [None, True, "bad", float("nan"), float("inf"), -1, 2])
 def test_unavailable_or_invalid_axis_never_passes(value):
     attrs = {f"lambda.a{i}": 0.97 for i in range(1, 6)}

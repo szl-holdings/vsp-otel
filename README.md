@@ -50,6 +50,8 @@ returns 415 for protobuf instead of claiming unsupported interoperability.
   prove downstream availability or deployed source identity.
 - Missing, nonfinite, boolean, or out-of-range governance axes fail closed.
   Clients supply axis evidence; aggregation does not independently establish it.
+  Boolean JSON values in numeric `doubleValue` or `intValue` fields return 400
+  before any span in the batch is signed, counted, or forwarded.
 - Every forwarded span carries `szl.dsse.receipt`: the complete verifiable DSSE
   envelope. Its subject digest binds the original span, resource and scope through
   [RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785)
