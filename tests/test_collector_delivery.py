@@ -260,3 +260,56 @@ def test_invalid_or_error_ack_is_not_delivery(configured, downstream, ack):
         response = client.post("/v1/traces", json=payload())
     assert response.status_code == 503
     assert collector.COUNTERS["forwarded"] == 0
+
+
+@pytest.mark.parametrize("invalid", [
+    {"intValue": 1.9},
+    {"intValue": "1.9"},
+    {"stringValue": 1},
+    {"boolValue": "false"},
+    {"doubleValue": 1.0, "boolValue": False},
+    {"doubleValue": 1.0, "arrayValue": {"values": []}},
+])
+def test_malformed_axis_values_rejected_before_signing(configured, downstream, monkeypatch, invalid):
+    data = payload()
+    spans = data["resourceSpans"][0]["scopeSpans"][0]["spans"]
+    # A valid first span must not be signed before a malformed later span is found.
+    spans.append(copy.deepcopy(spans[0]))
+    spans[1]["attributes"][0]["value"] = invalid
+    signed = []
+    original_sign = collector.SIGNER.sign_span
+    def sign(*args, **kwargs):
+        signed.append(True)
+        return original_sign(*args, **kwargs)
+    monkeypatch.setattr(collector.SIGNER, "sign_span", sign)
+    with TestClient(collector.build_fastapi()) as client:
+        response = client.post("/v1/traces", json=data)
+    assert response.status_code == 400
+    assert signed == []
+    assert downstream["received"] == []
+    assert collector.COUNTERS == {"received": 0, "accepted": 0, "rejected": 0, "forwarded": 0}
+
+
+@pytest.mark.parametrize("value", [
+    {"doubleValue": "9.7e-1"}, {"intValue": "1"}, {"intValue": "1e0"},
+    {"intValue": 1.0}, {"doubleValue": 0.97, "futureField": 42},
+    {"doubleValue": 0.97, "boolValue": None},
+])
+def test_valid_protojson_axis_encodings_still_forward(configured, downstream, value):
+    data = payload()
+    data["resourceSpans"][0]["scopeSpans"][0]["spans"][0]["attributes"][0]["value"] = value
+    code, body = collector.trace_response(json.dumps(data).encode(), "application/json")
+    assert code == 200
+    assert body["szl"]["request"]["forwarded"] == 1
+    assert len(downstream["received"]) == 1
+
+
+@pytest.mark.parametrize("value", [{"boolValue": True}, {}, {"doubleValue": None}, {"futureField": 1}])
+def test_non_numeric_or_unset_axis_cannot_pass_gate(configured, downstream, value):
+    data = payload()
+    data["resourceSpans"][0]["scopeSpans"][0]["spans"][0]["attributes"][0]["value"] = value
+    code, body = collector.trace_response(json.dumps(data).encode(), "application/json")
+    assert code == 200
+    assert body["partialSuccess"]["rejectedSpans"] == "1"
+    assert body["szl"]["request"]["forwarded"] == 0
+    assert downstream["received"] == []
