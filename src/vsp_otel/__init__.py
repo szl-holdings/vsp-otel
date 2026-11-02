@@ -26,7 +26,7 @@ Honest gaps are declared in README.md and ARCH.md — read them.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.1.3"
 
 # Doctrine constants (single source of truth, re-exported for tests/diagnostics).
 DOCTRINE = {

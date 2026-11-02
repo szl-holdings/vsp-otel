@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vsp-otel"
-version = "0.1.2"
+version = "0.1.3"
 description = "Verifiable Span Provenance via OpenTelemetry — real OTLP/gRPC exporter + DSSE/Khipu span processor for the SZL mesh"
 readme = "src/vsp_otel/README.md"
 requires-python = ">=3.10"
