@@ -96,6 +96,11 @@ def _validate_payload(payload: Any) -> None:
                         raise ValueError("Span attributes require unique keys and value objects")
                     if attr["key"].startswith(("szl.dsse.", "szl.mesh.", "szl.lambda.")):
                         raise ValueError("Collector receipt and verdict attributes are reserved")
+                    # Python treats bool as numeric; int(True)/float(True) would
+                    # erase its type before the governance gate can reject it.
+                    if any(isinstance(attr["value"].get(field), bool)
+                           for field in ("doubleValue", "intValue")):
+                        raise ValueError("Numeric span attributes must not contain booleans")
                     keys.add(attr["key"])
 
 
