@@ -34,6 +34,8 @@ jobs:
           node-version: '24.19.0'
       - name: Install exact dependency graph
         run: pnpm install --frozen-lockfile
+      - name: Verify optional fuzz execution boundaries
+        run: node --test tests/test_optional_fuzz.mjs
       - name: Lint
         run: pnpm lint
       - name: Build and typecheck
