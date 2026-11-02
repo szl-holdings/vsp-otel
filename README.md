@@ -74,6 +74,15 @@ They use a real loopback downstream fixture and independently verify the receipt
 signature and input digest. Hosted CI, publication, cluster deployment and a live
 estate trace require their own evidence.
 
+## Optional fuzz CI
+
+The scheduled fuzz workflow looks for a root `test:fuzz` script. The current
+workspace does not define one, so it reports that no fuzz tests ran and does not
+install dependencies. When configured, it uses the committed pnpm lockfile;
+dependency installation and fuzz failures fail the job and retain their output.
+It does not download or add a fuzz framework automatically. Run the execution
+boundary checks with `node --test tests/test_optional_fuzz.mjs`.
+
 **Layer 4 (Λ-gate exporter) of the SZL 7-layer architecture.**
 Λ-signed OpenTelemetry exporter for SZL audit fibers.
 
