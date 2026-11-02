@@ -28,6 +28,7 @@ import copy
 import os
 import urllib.request
 import urllib.parse
+from decimal import Decimal, InvalidOperation
 from threading import RLock
 from typing import Any
 
@@ -102,6 +103,7 @@ def _validate_payload(payload: Any) -> None:
                            for field in ("doubleValue", "intValue")):
                         raise ValueError("Numeric span attributes must not contain booleans")
                     keys.add(attr["key"])
+                    _otlp_attr_to_dict([attr])  # Validate before any span is signed.
 
 
 def _otlp_attr_to_dict(attributes: list[dict]) -> dict[str, Any]:
@@ -110,13 +112,38 @@ def _otlp_attr_to_dict(attributes: list[dict]) -> dict[str, Any]:
     for kv in attributes or []:
         k = kv.get("key")
         v = kv.get("value", {})
+        # AnyValue is a protobuf oneof. Unknown fields are ignored by OTLP,
+        # and null leaves a field unset; neither may select a numeric axis.
+        fields = ("doubleValue", "intValue", "boolValue", "stringValue",
+                  "arrayValue", "kvlistValue", "bytesValue")
+        present = [field for field in fields if v.get(field) is not None]
+        if len(present) > 1:
+            raise ValueError("AnyValue must select at most one value field")
+        v = {field: v[field] for field in present}
         if "doubleValue" in v:
-            out[k] = float(v["doubleValue"])
+            value = v["doubleValue"]
+            if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+                raise ValueError("doubleValue must be numeric")
+            out[k] = float(value)
         elif "intValue" in v:
-            out[k] = int(v["intValue"])
+            value = v["intValue"]
+            if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+                raise ValueError("intValue must be an integer")
+            try:
+                number = Decimal(str(value))
+                if (not number.is_finite() or number != number.to_integral_value()
+                        or not -(2 ** 63) <= number < 2 ** 63):
+                    raise ValueError("intValue must be a signed 64-bit integer")
+            except InvalidOperation as exc:
+                raise ValueError("intValue must be an integer") from exc
+            out[k] = int(number)
         elif "boolValue" in v:
-            out[k] = bool(v["boolValue"])
+            if not isinstance(v["boolValue"], bool):
+                raise ValueError("boolValue must be a boolean")
+            out[k] = v["boolValue"]
         elif "stringValue" in v:
+            if not isinstance(v["stringValue"], str):
+                raise ValueError("stringValue must be a string")
             out[k] = v["stringValue"]
     return out
 
