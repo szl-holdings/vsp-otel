@@ -21,7 +21,7 @@
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite": "^8.1.6",
     "vitest": "^5.0.5",
-    "@types/node": "26.6.5"
+    "@types/node": "26.6.6"
   },
   "main": "./dist/exporter.js",
   "types": "./dist/exporter.d.ts",
