@@ -41,7 +41,7 @@ class Welford:
 
     Used here for the online variance of *trace fan-out* — i.e. how many spans
     are flushed per export batch. Lets the mesh emit a stable variance estimate
-    without retaining samples. (See ARCH.md "Formula tie-ins".)
+    without retaining samples. (See README.md "Formula tie-ins".)
     """
 
     __slots__ = ("n", "mean", "_m2")

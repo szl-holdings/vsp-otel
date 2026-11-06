@@ -21,7 +21,8 @@ Public API
     DSSEKhipuSpanProcessor        -> SpanProcessor that DSSE-binds + Khipu-chains spans
     KhipuChain                    -> in-memory append-only Khipu receipt chain
 
-Honest gaps are declared in README.md and ARCH.md — read them.
+Honest gaps are declared in src/vsp_otel/README.md (the PyPI description) and
+in the dsse_processor module docstring — read them.
 """
 
 from __future__ import annotations
