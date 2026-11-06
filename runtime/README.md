@@ -66,7 +66,7 @@ threshold 0.85). The upstream `ouroboros` repo is archived.
 
 ```bash
 pnpm install          # from the repo root (pnpm workspace)
-pnpm test             # runtime vitest (29 tests) + root gate suite (pnpm test:gates, 48 tests)
+pnpm test             # runtime vitest (29 tests) + root gate suite (pnpm test:gates, 49 tests)
 pnpm build            # tsc -> runtime/dist
 # Start server
 cd runtime && VSP_PORT=3004 node dist/server.js

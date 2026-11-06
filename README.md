@@ -208,7 +208,7 @@ files were not compiled in this check; "sorry-free" is what each file states abo
   from PyPI they stayed in process (see [CHANGELOG](CHANGELOG.md)).
 - The root gate modules `src/{pipeline,redaction,sla}` carry Lean citations with explicit
   binding status (`@lean_status`): relay latency GREEN, DPI CONDITIONAL, SCITT NOT-BOUND.
-  `pnpm test:gates` runs their 48 tests.
+  `pnpm test:gates` runs their 49 tests.
 
 ## Architecture in context
 

@@ -92,6 +92,21 @@ describe("th6DpiSoundnessCheck — conditional theorem dpi_receipt_chain_entropy
     ).toThrow(/DPI SOUNDNESS VIOLATION/);
   });
 
+  it("assertDpiSoundness cites the real, conditional theorem", () => {
+    let message = "";
+    try {
+      assertDpiSoundness([
+        { name: "a", entropyBits: 3.0 },
+        { name: "b", entropyBits: 5.0 },
+      ]);
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("Lutar.DPI.dpi_receipt_chain_entropy_bound (CONDITIONAL)");
+    // The namespace is Lutar.DPI; "Lutar.DPI.TH6_DPISoundness." never existed.
+    expect(message).not.toContain("TH6_DPISoundness");
+  });
+
   it("assertDpiSoundness returns result on pass", () => {
     const r = assertDpiSoundness([
       { name: "a", entropyBits: 5.0 },

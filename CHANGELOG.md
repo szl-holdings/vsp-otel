@@ -19,7 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   immutable span. A failing signer no longer raises into the instrumented app;
   `bind_failures` / `stamp_failures` count unbound or unstamped spans.
 - Root gate suite (`test/` over `src/{pipeline,redaction,sla}`) now runs in CI
-  (`pnpm test:gates`, 48 tests); 3 of its tests had been failing unseen. The SCITT gate
+  (`pnpm test:gates`, 49 tests); 3 of its tests had been failing unseen. The SCITT gate
   no longer throws "THEOREM VIOLATION" on valid field-wise redactions; it enforces the
   redaction contract and bounds revealed information instead, and its Lean citation is
   marked NOT-BOUND. The DPI theorem name/status is corrected

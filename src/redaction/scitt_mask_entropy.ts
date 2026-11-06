@@ -19,9 +19,10 @@
  *   2. Revealed information never grows: with c_v the count of value v among n values,
  *      T(values) = Σ_v c_v · log2(n / c_v) bits (= n × empirical entropy). For any
  *      field-wise redaction, T(unredacted masked values) ≤ T(original values).
- *      Proof: removing one occurrence of v changes T by g(n) − g(c_v), where
- *      g(x) = x·log2(x) − (x−1)·log2(x−1) is increasing for x ≥ 1 and n ≥ c_v, so
- *      T never increases; induct over the redacted fields.
+ *      Proof: T = n·log2(n) − Σ_v c_v·log2(c_v). Removing one occurrence of v lowers T
+ *      by g(n) − g(c_v), where g(x) = x·log2(x) − (x−1)·log2(x−1) (with 0·log2(0) = 0)
+ *      is increasing for x ≥ 1; since c_v ≤ n that decrease is ≥ 0, so T never
+ *      increases; induct over the redacted fields.
  *   `originalEntropy` / `maskedEntropy` (nulls as one symbol) are reported as observations
  *   only: they MAY increase under field-wise masking and are not a guarantee.
  *
