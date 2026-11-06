@@ -335,18 +335,25 @@ class DSSEKhipuSpanProcessor:
         # Bind first, then stamp the values of the receipt actually appended, so
         # the exported index/prev always match the chain (no pre-computation
         # outside the chain lock).
+        # The counters are exact; logging is loud for the first failure of each
+        # kind and DEBUG afterwards, so a systemic fault cannot flood the logs.
         try:
             receipt = self.bind(span)
         except Exception:
             self.bind_failures += 1
-            _LOG.exception("vsp_otel: could not DSSE-bind span %r; it has no "
-                           "Khipu receipt", getattr(span, "name", None))
+            level = logging.ERROR if self.bind_failures == 1 else logging.DEBUG
+            _LOG.log(level, "vsp_otel: could not DSSE-bind span %r; it has no "
+                     "Khipu receipt (bind_failures=%d)",
+                     getattr(span, "name", None), self.bind_failures,
+                     exc_info=True)
             return
         if not _stamp_provenance(span, _provenance_attributes(receipt)):
             self.stamp_failures += 1
-            _LOG.warning("vsp_otel: Khipu receipt %d is chained but span %r "
-                         "does not carry %s", receipt.index,
-                         getattr(span, "name", None), ATTR_RECEIPT_HASH)
+            level = logging.WARNING if self.stamp_failures == 1 else logging.DEBUG
+            _LOG.log(level, "vsp_otel: Khipu receipt %d is chained but span %r "
+                     "does not carry %s (stamp_failures=%d)", receipt.index,
+                     getattr(span, "name", None), ATTR_RECEIPT_HASH,
+                     self.stamp_failures)
 
     def shutdown(self) -> None:
         pass

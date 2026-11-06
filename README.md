@@ -134,9 +134,9 @@ forwards them to your existing backend (Tempo / Jaeger / any OTLP collector).
   context, optional ServiceMonitor, configurable floor + forward endpoint.
 - **`docs/INTEGRATION.md`** — "your existing OTel SDK already works — just point the
   exporter at vsp-otel."
-- **`tests/`** — 86 Python tests in 6 files: 60 for the collector (Λ-gate accept/reject,
+- **`tests/`** — 87 Python tests in 6 files: 60 for the collector (Λ-gate accept/reject,
   Welford exactness, HLL cardinality, DSSE shape and signature, delivery/retry and input
-  validation) and 26 for the `vsp_otel` library (DSSE binding, exporter config, a real
+  validation) and 27 for the `vsp_otel` library (DSSE binding, exporter config, a real
   OTLP/gRPC round-trip, version). One of them, the Docker collector-container test, is
   opt-in (`VSP_OTEL_IT_DOCKER=1`; CI runs it).
 
@@ -146,7 +146,7 @@ and its anchor-formula injection — is unchanged and remains the library form; 
 
 ```bash
 pip install -e '.[test]' -r collector/requirements.txt   # library, collector and test deps
-python -m pytest                                          # 85 passed, 1 skipped (Docker opt-in)
+python -m pytest                                          # 86 passed, 1 skipped (Docker opt-in)
 
 # The collector refuses traffic until it has a signing key and a downstream:
 export VSP_SIGN_KEY_PEM="$(openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256)"  # demo key only

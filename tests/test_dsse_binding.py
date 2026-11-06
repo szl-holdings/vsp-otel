@@ -201,3 +201,18 @@ def test_signer_failure_does_not_raise_into_the_app_and_is_counted():
     assert proc.bind_failures == 1
     assert len(chain) == 0
     assert ATTR_RECEIPT_HASH not in span.attributes
+
+
+def test_repeated_failures_are_counted_but_logged_loudly_once(caplog):
+    import logging
+
+    def broken_signer(_data):
+        raise RuntimeError("signing backend unavailable")
+
+    proc = DSSEKhipuSpanProcessor(chain=KhipuChain(), signer=broken_signer)
+    with caplog.at_level(logging.DEBUG, logger="vsp_otel.dsse_processor"):
+        for i in range(3):
+            proc.on_end(SpanStub(f"op{i}", 1, i + 1, {"a": i}))
+    assert proc.bind_failures == 3
+    loud = [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert len(loud) == 1 and "bind_failures=1" in loud[0].getMessage()
