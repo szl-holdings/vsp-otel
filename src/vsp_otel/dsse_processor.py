@@ -237,9 +237,11 @@ def _stamp_provenance(span, attrs: dict) -> bool:
 
     Writable spans (and duck-typed stubs) take them through ``set_attribute``.
     A real OpenTelemetry SDK hands ``on_end`` an immutable ``ReadableSpan``
-    with no ``set_attribute``; SDKs that also call ``_on_ending`` freeze the
-    attributes before that hook runs (checked for opentelemetry-sdk 1.25-1.45),
-    so neither hook can add attributes through the public API. The default
+    with no ``set_attribute``. SDKs that also call ``_on_ending`` (1.40+) set
+    the span's end time before that hook runs, so ``set_attribute`` there is
+    refused ("Setting attribute on ended span."); 1.43+ also freezes the
+    attribute map first. So, on opentelemetry-sdk 1.25-1.45, neither hook can
+    add attributes through the public API. The default
     synchronous multi-processor passes this same ``ReadableSpan`` to every
     later processor, so we replace its frozen attribute map with a new frozen
     map that also carries ``attrs`` (keeping its dropped-attribute count).
@@ -310,6 +312,10 @@ class DSSEKhipuSpanProcessor:
     _bound: int = field(default=0, init=False)
     bind_failures: int = field(default=0, init=False)
     stamp_failures: int = field(default=0, init=False)
+    # Guards the failure counters: ``+=`` on an attribute is not atomic on
+    # free-threaded CPython, and on_end may run on many threads at once.
+    _counter_lock: threading.Lock = field(default_factory=threading.Lock,
+                                          init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.signer is None:
@@ -325,9 +331,10 @@ class DSSEKhipuSpanProcessor:
             pass
 
     def _on_ending(self, span) -> None:
-        # Required hook: opentelemetry-sdk >= 1.42 calls ``_on_ending`` on every
-        # registered processor. Deliberately a no-op — the SDK has already
-        # frozen the span's attributes when it calls this hook, so binding and
+        # Required hook: opentelemetry-sdk >= 1.40 calls ``_on_ending`` on every
+        # registered processor. Deliberately a no-op — the SDK has already set
+        # the span's end time when it calls this hook (1.43+ also freezes its
+        # attributes), so ``set_attribute`` is refused here; binding and
         # stamping both happen in ``on_end`` (see ``_stamp_provenance``).
         return None
 
@@ -335,25 +342,28 @@ class DSSEKhipuSpanProcessor:
         # Bind first, then stamp the values of the receipt actually appended, so
         # the exported index/prev always match the chain (no pre-computation
         # outside the chain lock).
-        # The counters are exact; logging is loud for the first failure of each
-        # kind and DEBUG afterwards, so a systemic fault cannot flood the logs.
+        # The counters are exact (updated under a lock); logging is loud for the
+        # first failure of each kind and DEBUG afterwards, so a systemic fault
+        # cannot flood the logs.
         try:
             receipt = self.bind(span)
         except Exception:
-            self.bind_failures += 1
-            level = logging.ERROR if self.bind_failures == 1 else logging.DEBUG
+            with self._counter_lock:
+                self.bind_failures += 1
+                count = self.bind_failures
+            level = logging.ERROR if count == 1 else logging.DEBUG
             _LOG.log(level, "vsp_otel: could not DSSE-bind span %r; it has no "
                      "Khipu receipt (bind_failures=%d)",
-                     getattr(span, "name", None), self.bind_failures,
-                     exc_info=True)
+                     getattr(span, "name", None), count, exc_info=True)
             return
         if not _stamp_provenance(span, _provenance_attributes(receipt)):
-            self.stamp_failures += 1
-            level = logging.WARNING if self.stamp_failures == 1 else logging.DEBUG
+            with self._counter_lock:
+                self.stamp_failures += 1
+                count = self.stamp_failures
+            level = logging.WARNING if count == 1 else logging.DEBUG
             _LOG.log(level, "vsp_otel: Khipu receipt %d is chained but span %r "
                      "does not carry %s (stamp_failures=%d)", receipt.index,
-                     getattr(span, "name", None), ATTR_RECEIPT_HASH,
-                     self.stamp_failures)
+                     getattr(span, "name", None), ATTR_RECEIPT_HASH, count)
 
     def shutdown(self) -> None:
         pass

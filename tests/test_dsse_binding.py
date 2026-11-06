@@ -216,3 +216,33 @@ def test_repeated_failures_are_counted_but_logged_loudly_once(caplog):
     assert proc.bind_failures == 3
     loud = [r for r in caplog.records if r.levelno >= logging.WARNING]
     assert len(loud) == 1 and "bind_failures=1" in loud[0].getMessage()
+
+
+def test_concurrent_failures_are_counted_exactly_and_logged_loudly_once(caplog):
+    # on_end runs on every thread that ends a span. The counters must not lose
+    # updates (``+=`` on an attribute is not atomic on free-threaded CPython),
+    # and exactly one thread must see the first failure and log it loudly.
+    import logging
+    import threading
+
+    def broken_signer(_data):
+        raise RuntimeError("signing backend unavailable")
+
+    proc = DSSEKhipuSpanProcessor(chain=KhipuChain(), signer=broken_signer)
+    n_threads, per_thread = 8, 250
+    barrier = threading.Barrier(n_threads)
+
+    def worker(t):
+        barrier.wait()
+        for i in range(per_thread):
+            proc.on_end(SpanStub(f"op{t}.{i}", 1, t * per_thread + i + 1, {"a": i}))
+
+    with caplog.at_level(logging.WARNING, logger="vsp_otel.dsse_processor"):
+        threads = [threading.Thread(target=worker, args=(t,)) for t in range(n_threads)]
+        for th in threads:
+            th.start()
+        for th in threads:
+            th.join()
+    assert proc.bind_failures == n_threads * per_thread
+    loud = [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert len(loud) == 1 and "bind_failures=1" in loud[0].getMessage()
