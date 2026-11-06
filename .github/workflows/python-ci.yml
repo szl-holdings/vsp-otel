@@ -98,3 +98,18 @@ jobs:
         run: docker build -f Dockerfile.python-lib -t vsp-otel:ci .
       - name: Run banner (import smoke)
         run: docker run --rm vsp-otel:ci
+      # The deployable collector image (root Dockerfile, used by the Helm chart)
+      # was never built in CI before.
+      - name: Build collector image
+        run: docker build -f Dockerfile -t vsp-otel-collector:ci .
+      - name: Collector image smoke (liveness up, readiness fail-closed)
+        run: |
+          docker run -d --name vsp-collector -p 127.0.0.1:4318:4318 vsp-otel-collector:ci
+          trap 'docker logs vsp-collector; docker rm -f vsp-collector >/dev/null' EXIT
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4318/healthz && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4318/healthz
+          # No signing key or downstream is configured, so readiness must refuse.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4318/readyz)" = 503
