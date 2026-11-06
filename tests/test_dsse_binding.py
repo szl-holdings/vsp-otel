@@ -127,3 +127,77 @@ def test_rekor_index_absent_when_no_submit():
     proc = DSSEKhipuSpanProcessor(chain=chain)  # no rekor_submit
     proc.on_end(SpanStub("op", 1, 2, {"a": 1}))
     assert chain.receipts()[0].rekor_log_index is None  # never fabricated
+
+
+# --- Real OpenTelemetry SDK spans (immutable ReadableSpan in on_end) ------
+def _sdk_pipeline(chain, **proc_kwargs):
+    import pytest
+    pytest.importorskip("opentelemetry.sdk.trace")
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
+
+    provider = TracerProvider()
+    proc = DSSEKhipuSpanProcessor(chain=chain, **proc_kwargs)
+    provider.add_span_processor(proc)  # must precede the export processor
+    exported = InMemorySpanExporter()
+    provider.add_span_processor(SimpleSpanProcessor(exported))
+    return provider, proc, exported
+
+
+def test_sdk_exported_span_carries_its_chained_receipt():
+    """Regression: the receipt used to stay in process memory only.
+
+    Real SDKs pass on_end an immutable ReadableSpan, so set_attribute-based
+    stamping never reached the exporter (opentelemetry-sdk 1.25-1.45).
+    """
+    from vsp_otel import ATTR_DSSE_PAYLOAD_TYPE, ATTR_KHIPU_PREV, ATTR_REKOR_LOG_INDEX
+
+    chain = KhipuChain()
+    provider, proc, exported = _sdk_pipeline(chain, rekor_submit=lambda env: 7)
+    tracer = provider.get_tracer("vsp-otel-test")
+    for i in range(3):
+        with tracer.start_as_current_span(f"op{i}") as span:
+            span.set_attribute("app.i", i)
+    provider.shutdown()
+
+    spans = exported.get_finished_spans()
+    receipts = chain.receipts()
+    assert len(spans) == len(receipts) == 3
+    for span, receipt in zip(spans, receipts):
+        assert span.attributes[ATTR_RECEIPT_HASH] == receipt.receipt_hash
+        assert span.attributes[ATTR_KHIPU_INDEX] == receipt.index
+        assert span.attributes[ATTR_KHIPU_PREV] == receipt.prev
+        assert span.attributes[ATTR_DSSE_PAYLOAD_TYPE] == PAYLOAD_TYPE
+        assert span.attributes[ATTR_REKOR_LOG_INDEX] == 7
+        assert span.attributes["app.i"] == receipt.index  # app data untouched
+    assert proc.stamp_failures == 0 and proc.bind_failures == 0
+    assert chain.verify() is True
+
+
+def test_unstampable_span_is_counted_not_silently_passed():
+    class Opaque:  # neither set_attribute nor an attribute map to replace
+        name = "opaque"
+        context = _Ctx(1, 2)
+        attributes = {"a": 1}
+
+    chain = KhipuChain()
+    proc = DSSEKhipuSpanProcessor(chain=chain)
+    proc.on_end(Opaque())
+    assert len(chain) == 1          # the receipt is still chained in process
+    assert proc.stamp_failures == 1  # ...but the gap is visible
+
+
+def test_signer_failure_does_not_raise_into_the_app_and_is_counted():
+    def broken_signer(_data):
+        raise RuntimeError("signing backend unavailable")
+
+    chain = KhipuChain()
+    proc = DSSEKhipuSpanProcessor(chain=chain, signer=broken_signer, keyid="k")
+    span = SpanStub("op", 1, 2, {"a": 1})
+    proc.on_end(span)  # must not raise into the instrumented application
+    assert proc.bind_failures == 1
+    assert len(chain) == 0
+    assert ATTR_RECEIPT_HASH not in span.attributes

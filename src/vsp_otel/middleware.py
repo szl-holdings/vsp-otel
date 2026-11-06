@@ -202,11 +202,18 @@ def _register_endpoints(app, cfg, chain, dsse_proc, vsp_exporter) -> bool:
             "khipu_head": chain.head,
             "chain_valid": chain.verify(),
             "spans_bound": dsse_proc._bound,
+            # Spans that got no receipt, or whose receipt is chained but not
+            # attached to the exported span. Non-zero = a provenance gap.
+            "bind_failures": dsse_proc.bind_failures,
+            "stamp_failures": dsse_proc.stamp_failures,
             "trace_fanout": fanout,  # Welford online variance of batch sizes
-            "slsa": "L1 honest + L2 attested (CI provenance)",
+            # A constant about this repo's build process, not evidence about
+            # the running artifact: the repo has no SLSA L2 provenance workflow.
+            "slsa": "L1 (no SLSA L2 provenance workflow in vsp-otel)",
             "honest_gaps": [
-                "Default signer is HMAC test signer unless a real cosign key is injected.",
+                "Default signer is HMAC test signer unless a real signer is injected.",
                 "Rekor inclusion only when rekor_submit is configured.",
+                "Khipu chain is in memory only: not persisted, grows per span.",
             ],
         }
 

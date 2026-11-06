@@ -22,6 +22,8 @@ gRPC packages are entirely absent.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import time
 
@@ -45,14 +47,21 @@ class _CollectingTraceService(pb_grpc.TraceServiceServicer):
         self.requests.append(request)
         return pb.ExportTraceServiceResponse()
 
+    def spans(self):
+        return [sp for req in self.requests for rs in req.resource_spans
+                for ss in rs.scope_spans for sp in ss.spans]
+
     def span_names(self):
-        names = []
-        for req in self.requests:
-            for rs in req.resource_spans:
-                for ss in rs.scope_spans:
-                    for sp in ss.spans:
-                        names.append(sp.name)
-        return names
+        return [sp.name for sp in self.spans()]
+
+
+def _wire_attributes(span) -> dict:
+    """Decode a received OTLP span's scalar AnyValue attributes."""
+    out = {}
+    for kv in span.attributes:
+        field = kv.value.WhichOneof("value")
+        out[kv.key] = getattr(kv.value, field) if field else None
+    return out
 
 
 @pytest.fixture
@@ -93,20 +102,47 @@ def test_span_crosses_otlp_grpc_wire_and_is_khipu_chained(otlp_receiver):
     tracer = provider.get_tracer("vsp-otel-it")
     with tracer.start_as_current_span("verifiable-span") as span:
         span.set_attribute("szl.test", "real-wire")
+    for i in range(2):
+        with tracer.start_as_current_span(f"verifiable-span-{i}") as span:
+            span.set_attribute("szl.test.index", i)
 
     provider.force_flush()
     provider.shutdown()
 
     # Give the server a brief moment to record the export.
     deadline = time.time() + 3
-    while time.time() < deadline and "verifiable-span" not in servicer.span_names():
+    while time.time() < deadline and len(servicer.spans()) < 3:
         time.sleep(0.05)
 
     # The span actually crossed the OTLP/gRPC wire.
     assert "verifiable-span" in servicer.span_names()
     # ...and it was bound into the Khipu chain.
-    assert len(chain) >= 1
+    assert len(chain) == 3
     assert chain.verify() is True
+
+    # Each exported span carries its own chained receipt (not just the chain
+    # in process memory), so a downstream verifier can tie the wire span to
+    # its chain entry and recompute the receipt digest from the span alone.
+    from vsp_otel import (ATTR_DSSE_PAYLOAD_TYPE, ATTR_KHIPU_INDEX,
+                          ATTR_KHIPU_PREV, ATTR_RECEIPT_HASH)
+    from vsp_otel.dsse_processor import PAYLOAD_TYPE, PROVENANCE_ATTRS
+
+    wire_spans = servicer.spans()
+    assert len(wire_spans) == 3
+    for wire, receipt in zip(wire_spans, chain.receipts()):
+        attrs = _wire_attributes(wire)
+        assert attrs[ATTR_RECEIPT_HASH] == receipt.receipt_hash
+        assert attrs[ATTR_KHIPU_INDEX] == receipt.index
+        assert attrs[ATTR_KHIPU_PREV] == receipt.prev
+        assert attrs[ATTR_DSSE_PAYLOAD_TYPE] == PAYLOAD_TYPE
+        body = json.dumps({
+            "name": wire.name,
+            "trace_id": wire.trace_id.hex(),
+            "span_id": wire.span_id.hex(),
+            "attributes": {k: v for k, v in attrs.items()
+                           if k not in PROVENANCE_ATTRS},
+        }, sort_keys=True, separators=(",", ":")).encode()
+        assert hashlib.sha256(body).hexdigest() == receipt.receipt_hash
 
 
 @pytest.mark.skipif(os.environ.get("VSP_OTEL_IT_DOCKER") != "1",

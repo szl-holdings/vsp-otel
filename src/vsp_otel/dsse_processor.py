@@ -15,6 +15,15 @@ For every span that ends, this processor:
   3. Stamps the Khipu index/prev onto the span as attributes, and (when present)
      the ``szl.mesh.rekor_log_index`` returned by the transparency-log sink.
 
+The stamped values are those of the receipt actually appended to the chain, and
+they reach the exported span: a real SDK hands ``on_end`` an immutable
+``ReadableSpan``, so :func:`_stamp_provenance` replaces that span's frozen
+attribute map before later processors (e.g. the exporting
+``BatchSpanProcessor``) receive the same object. Register this processor
+*before* the export processor on the default synchronous multi-processor.
+Spans that cannot be bound or stamped are counted (``bind_failures`` /
+``stamp_failures``) and logged — never silently passed.
+
 DSSE PAE (per the spec, https://github.com/secure-systems-lab/dsse):
 
     PAE(type, body) = "DSSEv1" SP LEN(type) SP type SP LEN(body) SP body
@@ -29,10 +38,17 @@ Honest gaps
   testable offline. A real ECDSA-P256 / cosign signer is injected in production
   via ``signer=`` (the a11oy mesh already has ``szl_dsse`` for this). When no
   production key is present we keep an HONEST ``UNSIGNED``-grade HMAC marker —
-  we never claim a cosign signature we did not make.
+  we never claim a cosign signature we did not make. Without
+  ``VSP_OTEL_HMAC_KEY`` the HMAC key is the public string ``vsp-otel-dev-key``,
+  so such signatures prove nothing about who produced a span.
 * Rekor inclusion is **optional**. If a ``rekor_submit`` callable is supplied we
   record the returned ``log_index``; otherwise the attribute is omitted (we do
   not fabricate a log index).
+* The receipt body is Python ``json.dumps(sort_keys=True, separators=(",", ":"))``
+  over ``{name, trace_id, span_id, attributes}``, not RFC 8785; verifiers in
+  other languages must reproduce that encoding.
+* :class:`KhipuChain` is in memory and append-only for the process lifetime; it
+  is not persisted and grows with every bound span.
 """
 
 from __future__ import annotations
@@ -41,6 +57,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import threading
 from dataclasses import dataclass, field
@@ -57,6 +74,18 @@ from . import (
 
 PAYLOAD_TYPE = "application/vnd.szl.khipu-span+json"
 GENESIS_PREV = "0" * 64  # genesis link for the Khipu chain
+
+# Attributes this processor writes. They are excluded from the receipt digest so
+# the receipt covers the *application* span only (no self-reference).
+PROVENANCE_ATTRS = (
+    ATTR_RECEIPT_HASH,
+    ATTR_KHIPU_INDEX,
+    ATTR_KHIPU_PREV,
+    ATTR_DSSE_PAYLOAD_TYPE,
+    ATTR_REKOR_LOG_INDEX,
+)
+
+_LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +214,70 @@ def _canonical_receipt(span_dict: dict) -> tuple[str, bytes]:
     return digest, body
 
 
+def _provenance_attributes(receipt: KhipuReceipt) -> dict:
+    """The span attributes that tie a span to its chained receipt."""
+    attrs = {
+        ATTR_RECEIPT_HASH: receipt.receipt_hash,
+        ATTR_KHIPU_INDEX: receipt.index,
+        ATTR_KHIPU_PREV: receipt.prev,
+        ATTR_DSSE_PAYLOAD_TYPE: receipt.payload_type,
+    }
+    if receipt.rekor_log_index is not None:
+        attrs[ATTR_REKOR_LOG_INDEX] = receipt.rekor_log_index
+    return attrs
+
+
+def _carries(span, attrs: dict) -> bool:
+    current = getattr(span, "attributes", None) or {}
+    return all(current.get(k) == v for k, v in attrs.items())
+
+
+def _stamp_provenance(span, attrs: dict) -> bool:
+    """Put ``attrs`` on the span object that later processors will export.
+
+    Writable spans (and duck-typed stubs) take them through ``set_attribute``.
+    A real OpenTelemetry SDK hands ``on_end`` an immutable ``ReadableSpan``
+    with no ``set_attribute``; SDKs that also call ``_on_ending`` freeze the
+    attributes before that hook runs (checked for opentelemetry-sdk 1.25-1.45),
+    so neither hook can add attributes through the public API. The default
+    synchronous multi-processor passes this same ``ReadableSpan`` to every
+    later processor, so we replace its frozen attribute map with a new frozen
+    map that also carries ``attrs`` (keeping its dropped-attribute count).
+
+    Returns whether the span now carries every attribute in ``attrs``; the
+    caller counts and logs a ``False``. Never raises: span processors must not
+    throw into the instrumented application.
+    """
+    setter = getattr(span, "set_attribute", None)
+    if callable(setter):
+        try:
+            for key, value in attrs.items():
+                setter(key, value)
+        except Exception:  # an ended SDK Span refuses writes; try the frozen map
+            pass
+        if _carries(span, attrs):
+            return True
+    if not hasattr(span, "_attributes"):
+        return False
+    try:
+        from opentelemetry.attributes import BoundedAttributes
+
+        frozen = span._attributes
+        merged = dict(frozen or {})
+        merged.update(attrs)
+        replacement = BoundedAttributes(
+            maxlen=None,
+            attributes=merged,
+            immutable=True,
+            max_value_len=getattr(frozen, "max_value_len", None),
+        )
+        replacement.dropped = getattr(frozen, "dropped", 0)
+        span._attributes = replacement
+    except Exception:
+        return False
+    return _carries(span, attrs)
+
+
 @dataclass
 class DSSEKhipuSpanProcessor:
     """OpenTelemetry ``SpanProcessor`` that DSSE-binds + Khipu-chains spans.
@@ -204,6 +297,10 @@ class DSSEKhipuSpanProcessor:
         ``dict(envelope) -> int(log_index)``. If supplied, the returned index is
         stamped as ``szl.mesh.rekor_log_index``. Omitted entirely if absent —
         we never fabricate a transparency-log index.
+
+    Counters ``bind_failures`` (signing/chaining raised) and
+    ``stamp_failures`` (receipt chained but not attached to the span) make
+    provenance gaps visible instead of swallowing them.
     """
 
     chain: KhipuChain
@@ -211,6 +308,8 @@ class DSSEKhipuSpanProcessor:
     keyid: str = ""
     rekor_submit: Optional[Callable[[dict], int]] = None
     _bound: int = field(default=0, init=False)
+    bind_failures: int = field(default=0, init=False)
+    stamp_failures: int = field(default=0, init=False)
 
     def __post_init__(self) -> None:
         if self.signer is None:
@@ -226,37 +325,28 @@ class DSSEKhipuSpanProcessor:
             pass
 
     def _on_ending(self, span) -> None:
-        # Newer OTel SDKs invoke _on_ending() while the span is STILL WRITABLE,
-        # just before end(). This is the correct place to stamp provenance
-        # attributes (a ReadableSpan is immutable by the time on_end() runs).
-        # We pre-compute the receipt hash + next khipu index here and stamp them;
-        # the actual chain append happens in on_end() so the digest covers the
-        # final application attributes.
-        try:
-            digest, _ = _canonical_receipt(self._span_to_dict(span))
-            next_index = len(self.chain)
-            span.set_attribute(ATTR_RECEIPT_HASH, digest)
-            span.set_attribute(ATTR_KHIPU_INDEX, next_index)
-            span.set_attribute(ATTR_KHIPU_PREV, self.chain.head)
-            span.set_attribute(ATTR_DSSE_PAYLOAD_TYPE, PAYLOAD_TYPE)
-        except Exception:
-            pass
+        # Required hook: opentelemetry-sdk >= 1.42 calls ``_on_ending`` on every
+        # registered processor. Deliberately a no-op — the SDK has already
+        # frozen the span's attributes when it calls this hook, so binding and
+        # stamping both happen in ``on_end`` (see ``_stamp_provenance``).
+        return None
 
     def on_end(self, span) -> None:
-        receipt = self.bind(span)
-        # Best-effort stamp for SDKs/stubs whose span is still writable here
-        # (e.g. the test SpanStub, which has no separate _on_ending phase).
-        setter = getattr(span, "set_attribute", None)
-        if callable(setter):
-            try:
-                setter(ATTR_RECEIPT_HASH, receipt.receipt_hash)
-                setter(ATTR_KHIPU_INDEX, receipt.index)
-                setter(ATTR_KHIPU_PREV, receipt.prev)
-                setter(ATTR_DSSE_PAYLOAD_TYPE, receipt.payload_type)
-                if receipt.rekor_log_index is not None:
-                    setter(ATTR_REKOR_LOG_INDEX, receipt.rekor_log_index)
-            except Exception:
-                pass
+        # Bind first, then stamp the values of the receipt actually appended, so
+        # the exported index/prev always match the chain (no pre-computation
+        # outside the chain lock).
+        try:
+            receipt = self.bind(span)
+        except Exception:
+            self.bind_failures += 1
+            _LOG.exception("vsp_otel: could not DSSE-bind span %r; it has no "
+                           "Khipu receipt", getattr(span, "name", None))
+            return
+        if not _stamp_provenance(span, _provenance_attributes(receipt)):
+            self.stamp_failures += 1
+            _LOG.warning("vsp_otel: Khipu receipt %d is chained but span %r "
+                         "does not carry %s", receipt.index,
+                         getattr(span, "name", None), ATTR_RECEIPT_HASH)
 
     def shutdown(self) -> None:
         pass
@@ -297,8 +387,7 @@ class DSSEKhipuSpanProcessor:
         attrs = dict(getattr(span, "attributes", {}) or {})
         # Drop our own provenance attributes to keep the receipt over the
         # *application* span only (avoid self-reference in the digest).
-        for k in (ATTR_RECEIPT_HASH, ATTR_KHIPU_INDEX, ATTR_KHIPU_PREV,
-                  ATTR_DSSE_PAYLOAD_TYPE, ATTR_REKOR_LOG_INDEX):
+        for k in PROVENANCE_ATTRS:
             attrs.pop(k, None)
         return {
             "name": getattr(span, "name", None),
