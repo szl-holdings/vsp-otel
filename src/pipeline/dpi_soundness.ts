@@ -1,13 +1,15 @@
 /**
  * TH6 DPI Soundness Pipeline Check
  *
- * @lean_theorem Lutar.DPI.TH6_DPISoundness.dpi_receipt_chain_entropy_bound
+ * @lean_theorem Lutar.DPI.dpi_receipt_chain_entropy_bound
  * @lean_file    Lutar/DPI/TH6_DPI_Soundness.lean
- * @lean_status  SORRY-TRACKED — theorem name corrected from "th6_dpi_soundness" (did not exist) to
- *               "dpi_receipt_chain_entropy_bound" (actual theorem at line 105). The theorem carries
- *               one tracked sorry (log-sum / Jensen inequality discharge pending; Cover-Thomas
- *               Thm 2.8.1 route documented). Not GREEN until sorry is discharged.
- *               Per PhD-Math review 2026-05-31 (Pass 1, Binding #4, Finding F5 HIGH).
+ * @lean_status  CONDITIONAL — sorry-free since lutar-lean #295 (f832b7a2, 2026-09-25), but only
+ *               because each step's entropy non-increase is now a hypothesis
+ *               (`h_dpi : ∀ op ∈ chain, DPI_hypothesis op`); the log-sum lemma that would
+ *               discharge it is still open (the Lean docstring says so). Not GREEN.
+ *               History: the name was corrected from the non-existent "th6_dpi_soundness"
+ *               (PhD-Math review 2026-05-31, Finding F5); the file's namespace is `Lutar.DPI`, so
+ *               the earlier "Lutar.DPI.TH6_DPISoundness." prefix never existed either.
  * @lean_commit  see LEAN_COMMIT_SHA env var; pin at CI time from lutar-lean/lean-toolchain
  *
  * Theorem (Cover & Thomas 2006 §2.8.1 Theorem 2.8.1, Data Processing Inequality):
@@ -25,7 +27,7 @@
  *
  * References:
  *   Cover & Thomas (2006) Elements of Information Theory, 2nd ed. §2.8
- *   Lutar/DPI/TH6_DPI_Soundness.lean — kernel-checked proof
+ *   Lutar/DPI/TH6_DPI_Soundness.lean — conditional proof (per-step DPI hypothesis assumed)
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -141,7 +143,7 @@ export function th6DpiSoundnessCheck(
 
   const receipt: DpiDsseReceipt = {
     formula: "th6_dpi_soundness",
-    lean_theorem: "Lutar.DPI.TH6_DPISoundness.dpi_receipt_chain_entropy_bound", // corrected per PhD-Math F5,
+    lean_theorem: "Lutar.DPI.dpi_receipt_chain_entropy_bound", // namespace Lutar.DPI (PhD-Math F5 + #295)
     lean_file: "Lutar/DPI/TH6_DPI_Soundness.lean",
     lean_commit_sha,
     inputs_hash,
@@ -168,7 +170,8 @@ export function assertDpiSoundness(stages: PipelineStage[]): DpiSoundnessResult 
       `DPI SOUNDNESS VIOLATION (TH6): entropy increased from stage "${v.fromStage}" ` +
         `(${v.fromEntropy} bits) to "${v.toStage}" (${v.toEntropy} bits), ` +
         `excess = ${v.excess.toFixed(6)} bits. ` +
-        `Lean theorem Lutar.DPI.TH6_DPISoundness.dpi_receipt_chain_entropy_bound prohibits entropy increase.`
+        `Lean theorem Lutar.DPI.dpi_receipt_chain_entropy_bound (CONDITIONAL) bounds chain ` +
+        `entropy only when every stage satisfies its DPI hypothesis; this stage does not.`
     );
   }
   return result;

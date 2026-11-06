@@ -42,3 +42,5 @@ jobs:
         run: pnpm -C runtime build
       - name: Test
         run: pnpm -C runtime test
+      - name: Test root gate modules (src/pipeline, src/redaction, src/sla)
+        run: pnpm run test:gates

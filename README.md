@@ -3,16 +3,21 @@
 ## Quickstart
 
 ```bash
-pip install vsp-otel
+pip install "vsp-otel[fastapi]" fastapi   # [fastapi] adds only the request auto-instrumentation, not FastAPI
 ```
 
 ```python
+from fastapi import FastAPI
 from vsp_otel import install, VSPConfig
 
+app = FastAPI()
 # one-call FastAPI middleware: every request's spans become hash-chained,
-# DSSE-signed evidence, exported over OTLP.
+# DSSE-bound evidence, exported over OTLP/gRPC (OTEL_EXPORTER_OTLP_ENDPOINT).
+# The default signer is an HMAC *test* signer — pass VSPConfig(signer=...) in production.
 install(app, VSPConfig(service_name="my-service"))
 ```
+
+The library's own guide is [`src/vsp_otel/README.md`](src/vsp_otel/README.md) (the PyPI description).
 
 ---
 
@@ -123,51 +128,68 @@ forwards them to your existing backend (Tempo / Jaeger / any OTLP collector).
     HMAC for direct local tests only; configured P-256 for HTTP ingestion).
   - **`stats.py`** — **Welford** online mean/variance for span latency +
     **HyperLogLog** for unique-trace cardinality.
-  - **`app.py`** — `/v1/traces` (OTLP ingest), `/healthz`, `/metrics` (Prometheus).
+  - **`app.py`** — `/v1/traces` (OTLP ingest), `/healthz`, `/readyz`, `/metrics` (Prometheus).
 - **`Dockerfile`** — per-file `COPY` only (doctrine §build), non-root, SLSA L1 honest (no L2 provenance workflow present).
 - **`deploy/helm/vsp-otel/`** — Helm chart (`helm lint` clean); 2 replicas, security
   context, optional ServiceMonitor, configurable floor + forward endpoint.
 - **`docs/INTEGRATION.md`** — "your existing OTel SDK already works — just point the
   exporter at vsp-otel."
-- **`tests/`** — 9 tests: Λ-gate accept/reject, Welford exactness, HLL cardinality,
-  DSSE shape, full OTLP pipeline. All passing.
+- **`tests/`** — 88 Python tests in 6 files: 60 for the collector (Λ-gate accept/reject,
+  Welford exactness, HLL cardinality, DSSE shape and signature, delivery/retry and input
+  validation) and 28 for the `vsp_otel` library (DSSE binding, exporter config, a real
+  OTLP/gRPC round-trip, version). One of them, the Docker collector-container test, is
+  opt-in (`VSP_OTEL_IT_DOCKER=1`; CI runs it).
 
 The pre-existing TypeScript runtime (`runtime/`) — the in-process `signSpan` exporter
 and its anchor-formula injection — is unchanged and remains the library form; the new
 `collector/` is the standalone deployable form.
 
 ```bash
-pip install -r collector/requirements.txt
-pytest tests/ -v                                  # 9 passed
-uvicorn collector.app:app --port 4318             # run the shim
-curl localhost:4318/healthz                        # {"status":"ok","lambda_floor":0.9}
+pip install -e '.[test]' -r collector/requirements.txt   # library, collector and test deps
+python -m pytest                                          # 87 passed, 1 skipped (Docker opt-in)
+
+# The collector refuses traffic until it has a signing key and a downstream:
+export VSP_SIGN_KEY_PEM="$(openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256)"  # demo key only
+export VSP_FORWARD_ENDPOINT=http://127.0.0.1:4319/v1/traces   # your OTLP/HTTP JSON backend
+uvicorn collector.app:app --port 4318
+curl localhost:4318/healthz   # {"status":"ok","service":"vsp-otel","lambda_floor":0.9}
+curl localhost:4318/readyz    # HTTP 200 {"ready":true,"status":"CONFIGURED",...}
 ```
 
-## Verified live (make-real strike, 2026-06-03)
+## Reproduced locally (2026-11-06)
 
-Posting two spans (one with A1–A5 = 0.97, one with A1 = 0.4) to a running instance:
+With the commands above (Python 3.13, a throwaway P-256 key, and a loopback stand-in
+receiver on `:4319` that acknowledges every batch — not a deployment), posting two spans,
+one with A1–A5 = 0.97 (latency 2 ms) and one with A1 = 0.4 (latency 5 ms), returned HTTP 200:
 
 ```json
-{"received":2,"accepted":1,"rejected":1,"lambda_floor":0.9,
- "unique_traces_est":2,"latency_ms":{"count":2,"mean":3.5,"variance":4.5,"stddev":2.12}}
+{"partialSuccess":{"rejectedSpans":"1","errorMessage":"Governance or downstream rejection"},
+ "szl":{"received":2,"accepted":1,"rejected":1,"forwarded":1,"unique_traces_est":2,
+        "latency_ms":{"count":2,"mean":3.5,"variance":4.5,"stddev":2.1213},
+        "lambda_floor":0.9,"request":{"received":2,"accepted":1,"rejected":1,"forwarded":1}}}
 ```
 
-The high-Λ span passed and was DSSE-signed; the low-A1 span was rejected by the
+Only the high-Λ span reached the receiver, carrying `szl.dsse.receipt`,
+`szl.dsse.receipt_hash` and `szl.dsse.keyid`; the low-A1 span was rejected by the
 geometric-mean gate. `/metrics` exposed `vsp_spans_total`, `vsp_lambda_floor`,
-`vsp_span_latency_ms_mean`, `vsp_unique_traces_estimate`.
+`vsp_span_latency_ms_mean`, `vsp_unique_traces_estimate`. (An earlier 2026-06-03 run
+predates the restored contract: it needed no key or downstream and returned a bare
+summary instead of the OTLP `partialSuccess` envelope.)
 
-## Formal references (lutar-lean — all in OPEN PRs, cite honestly)
+## Formal references (lutar-lean — cite honestly)
+
+Status checked against `lutar-lean` `main` on 2026-11-06 (PR state + code search). The Lean
+files were not compiled in this check; "sorry-free" is what each file states about itself.
 
 | Used for | Lean reference | Status |
 |---|---|---|
-| Welford latency mean/variance | [`Lutar.Round11.Welford.welford_mean_exact`, `weightedMean_increment`](https://github.com/szl-holdings/lutar-lean/pull/180) | **theorem** (sorry-free), PR #180 · runtime path: `sentra/runtime/welford_gate.py` (infra dir of the **CHAPAQ** egress immune-inspector; path kept verbatim) |
-| DSSE in-toto attestations | [`Lutar.Round10.CryptoDSSE.dsse_classical_euf_cma`](https://github.com/szl-holdings/lutar-lean/pull/179) | conditional EUF-CMA **theorem** (0 real sorry), PR #179 |
-| Rekor transparency (cosign keyless) | [`Lutar.Round10.CryptoRekor.rekor_inclusion_completeness`](https://github.com/szl-holdings/lutar-lean/pull/179) | completeness **theorem**; soundness is an honest tagged `sorry` (Conjecture 1), PR #179 |
-| Bekenstein throughput ceiling (audit-fiber budget) | [`Lutar.Round10...bekensteinCeiling_mono_E`](https://github.com/szl-holdings/lutar-lean/pull/177) | **theorem** (0 real sorry), PR #177 |
+| Welford latency mean/variance | [`Lutar.Round11.Welford.welford_mean_exact`, `weightedMean_increment`](https://github.com/szl-holdings/lutar-lean/pull/180) | **theorem** (sorry-free), merged in PR #180, `Lutar/Innovations/round11/FrontierWelfordVariance.lean` · runtime path: `sentra/runtime/welford_gate.py` (infra dir of the **CHAPAQ** egress immune-inspector; path kept verbatim) |
+| DSSE in-toto attestations | [`Lutar.Round10.CryptoDSSE.dsse_classical_euf_cma`](https://github.com/szl-holdings/lutar-lean/pull/179) | **not on `main`** — PR #179 was closed unmerged; no theorem backs the collector's DSSE signing |
+| Rekor transparency (cosign keyless) | [`Lutar.Round10.CryptoRekor.rekor_inclusion_completeness`](https://github.com/szl-holdings/lutar-lean/pull/179) | **not on `main`** — PR #179 was closed unmerged; keyless signing is not implemented either |
+| Bekenstein throughput ceiling (audit-fiber budget) | [`Lutar.Innovations.Round10.PhysicsEntropyBounds.bekensteinCeiling_mono_E`](https://github.com/szl-holdings/lutar-lean/pull/177) | **theorem** (sorry-free), merged in PR #177, `Lutar/Innovations/round10/PhysicsEntropyBounds.lean` |
 
-> **Λ is Conjecture 1 — never a theorem.** Cited PRs are open on `lutar-lean`. The
-> Λ-gate's geometric-mean aggregation mirrors a11oy's graph-Λ construction but Λ
-> itself remains conjectural. HONESTY OVER CHECKLIST.
+> **Λ is Conjecture 1 — never a theorem.** The Λ-gate's geometric-mean aggregation
+> mirrors a11oy's graph-Λ construction but Λ itself remains conjectural. HONESTY OVER CHECKLIST.
 
 ## Honest boundaries (disclosed, not hidden — HR-6)
 
@@ -176,11 +198,23 @@ geometric-mean gate. `/metrics` exposed `vsp_spans_total`, `vsp_lambda_floor`,
   test signatures do not establish configured service readiness.
 - The Λ axis scores are supplied by the instrumented org as span attributes; vsp-otel
   aggregates and gates them — it does not itself infer A1–A5.
+- The **TypeScript runtime gate is not fail-closed** and is not the collector's gate: it is a
+  weighted arithmetic mean over nine axes with a 0.85 threshold (the local
+  `stubs/ouroboros-lambda-gate`), and a missing axis defaults to 0.90 — so a span with no Λ
+  evidence at all scores 0.90 and passes. The Python collector instead treats missing
+  evidence as 0 and vetoes. See [`runtime/README.md`](runtime/README.md).
+- The `vsp_otel` library's Khipu chain is in process memory (not persisted). Exported spans
+  carry their receipt attributes only from the fix after 0.1.3; with `vsp-otel` ≤ 0.1.3
+  from PyPI they stayed in process (see [CHANGELOG](CHANGELOG.md)).
+- The root gate modules `src/{pipeline,redaction,sla}` carry Lean citations with explicit
+  binding status (`@lean_status`): relay latency GREEN, DPI CONDITIONAL, SCITT NOT-BOUND.
+  `pnpm test:gates` runs their 49 tests.
 
 ## Architecture in context
 
-`vsp-otel` (L4) signs and forwards spans that conform to the `szl-otel-mesh` (L5) schemas;
-the receipts it stamps are validated by `hatun-mcp` (L6) `validate-receipt-against-doctrine`.
+`vsp-otel` (L4) signs and forwards spans that conform to the L5 schemas of the now-**archived**
+`szl-otel-mesh` repo (superseded by this repo, see above); the receipts it stamps are
+validated by `hatun-mcp` (L6) `validate-receipt-against-doctrine`.
 
 ---
 
@@ -191,4 +225,4 @@ Co-Authored-By: Perplexity Computer Agent <agent@perplexity.ai>
 
 ---
 
-**Explore the SZL estate:** [a11oy console](https://a-11-oy.com) · [LLM Router](https://github.com/szl-holdings/szl-router) · [Receipt format spec](https://github.com/szl-holdings/governed-receipt-spec) · [Lean proofs](https://github.com/szl-holdings/lutar-lean) · [Docs](https://github.com/szl-holdings/docs-site) · [🤗 SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS)
+**Explore the SZL estate:** [a11oy console](https://a-11-oy.com) · [LLM Router](https://github.com/szl-holdings/szl-router) · [Receipt format spec](https://github.com/szl-holdings/governed-receipt-spec) · [Lean proofs](https://github.com/szl-holdings/lutar-lean) · [Docs (archived)](https://github.com/szl-holdings/docs-site) · [🤗 SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS)

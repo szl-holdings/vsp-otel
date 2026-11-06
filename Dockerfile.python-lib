@@ -17,9 +17,11 @@ RUN pip install --no-cache-dir \
     "opentelemetry-sdk>=1.25.0" \
     "opentelemetry-exporter-otlp-proto-grpc>=1.25.0"
 
-# 2) Package metadata (explicit per-file COPY — no `COPY . .`).
+# 2) Package metadata (explicit per-file COPY — no `COPY . .`). Paths match
+#    pyproject.toml: `readme` and `license-files` must exist or the build fails.
 COPY pyproject.toml ./pyproject.toml
-COPY src/vsp_otel/README.md ./README.md
+COPY LICENSE ./LICENSE
+COPY src/vsp_otel/README.md ./src/vsp_otel/README.md
 
 # 3) Source — explicit per-file COPY of every module.
 COPY src/vsp_otel/__init__.py        ./src/vsp_otel/__init__.py

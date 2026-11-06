@@ -1,8 +1,10 @@
 /**
  * Tests for SCITT Mask Entropy Redaction Gate
- * Lean theorem: Lutar.DPI.SCITT.scitt_mask_entropy_bound (GREEN)
+ * Cited Lean theorem: Lutar.DPI.SCITT.scitt_mask_entropy_bound — NOT-BOUND (see the
+ * module's @lean_status: it does not state the per-record bound checked here).
  *
- * All 1000+ random-input assertions verify H(masked) ≤ H(original).
+ * Pins the counterexample to the old per-record claim H(masked) ≤ H(original), and
+ * checks over 1000 random redactions that revealed information T never grows.
  */
 
 import { describe, it, expect } from "vitest";
@@ -16,7 +18,29 @@ import {
 // Deterministic cases
 // ---------------------------------------------------------------------------
 
-describe("scittMaskEntropyGate — GREEN theorem scitt_mask_entropy_bound", () => {
+describe("scittMaskEntropyGate — field-wise redaction gate", () => {
+  it("counterexample: per-record entropy can RISE under field-wise masking", () => {
+    // The old gate threw "THEOREM VIOLATION" on this valid redaction.
+    const r = scittMaskEntropyGate({ id: "1", val: "1" }, { id: null, val: "1" });
+    expect(r.originalEntropy).toBeCloseTo(0, 9);
+    expect(r.maskedEntropy).toBeCloseTo(1, 9); // 1 bit > 0 bits
+    // ...while the revealed information did not grow.
+    expect(r.revealedInformationBits).toBeLessThanOrEqual(r.originalInformationBits + 1e-9);
+    expect(r.valid).toBe(true);
+  });
+
+  it("rejects a masked value that is not the original value", () => {
+    expect(() =>
+      scittMaskEntropyGate({ a: "secret", b: "x" }, { a: "forged", b: null })
+    ).toThrow(/neither redacted/);
+  });
+
+  it("receipt does not present the cited theorem as binding", () => {
+    const r = scittMaskEntropyGate({ k: "v" }, { k: null });
+    expect(r.receipt.lean_status).toBe("NOT-BOUND");
+    expect(r.receipt.output.revealedInformationBits).toBe(0);
+  });
+
   it("masking all fields produces entropy ≤ original", () => {
     const orig = { a: "foo", b: "bar", c: "baz" };
     const masked = { a: null, b: null, c: null };
@@ -72,8 +96,8 @@ describe("scittMaskEntropyGate — GREEN theorem scitt_mask_entropy_bound", () =
 // Fuzz: 1000 random field sets
 // ---------------------------------------------------------------------------
 
-describe("scittMaskEntropyGate — 1000 random field sets (theorem fuzz)", () => {
-  it("mask entropy ≤ original entropy for 1000 random records", () => {
+describe("scittMaskEntropyGate — 1000 random field-wise redactions", () => {
+  it("revealed information ≤ original information for 1000 random records", () => {
     const VOCAB = ["alpha", "beta", "gamma", "delta", "epsilon"];
     let failures = 0;
     for (let i = 0; i < 1000; i++) {
@@ -91,7 +115,7 @@ describe("scittMaskEntropyGate — 1000 random field sets (theorem fuzz)", () =>
         ])
       );
       const r = scittMaskEntropyGate(orig, masked);
-      if (!r.valid) failures++;
+      if (!r.valid || r.revealedInformationBits > r.originalInformationBits + 1e-9) failures++;
     }
     expect(failures).toBe(0);
   });
@@ -111,7 +135,9 @@ describe("scittMaskEntropyBatch", () => {
     expect(results).toHaveLength(500);
     for (const r of results) {
       expect(r.valid).toBe(true);
-      expect(r.maskedEntropy).toBeLessThanOrEqual(r.originalEntropy + 1e-9);
+      expect(r.revealedInformationBits).toBeLessThanOrEqual(r.originalInformationBits + 1e-9);
     }
+    // The per-record entropy is only an observation: this batch includes rises.
+    expect(results.some((r) => r.maskedEntropy > r.originalEntropy + 1e-9)).toBe(true);
   });
 });

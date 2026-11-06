@@ -9,20 +9,26 @@
 Wraps an OpenTelemetry span pipeline with a Λ-signing layer. Every span exported through this module receives:
 
 1. Axis score derivation from span attributes (`lambda.*` attribute namespace)
-2. Λ-gate evaluation (uses `@szl/ouroboros-lambda-gate` as upstream)
+2. Λ-gate evaluation via `@szl/ouroboros-lambda-gate`, which resolves to the in-repo stub
+   `stubs/ouroboros-lambda-gate` (the upstream `ouroboros` repo is archived)
 3. A SHA-256 receipt hash stored in the gate's receipt store if `pass=true`
 
 ### Span attribute convention
 
-Encode axis scores as span attributes with the `lambda.` prefix:
+Encode axis scores as span attributes with the `lambda.` prefix, in OTel snake_case
+(camelCase keys such as `lambda.moralGrounding` are still read for back-compat):
 
 ```
-lambda.moralGrounding = 0.96
-lambda.measurabilityHonesty = 0.95
+lambda.moral_grounding = 0.96
+lambda.measurability_honesty = 0.95
 ...
 ```
 
-Missing axes default to `0.90` (gate floor).
+Missing axes default to `0.90`. The stub gate is a weighted arithmetic mean over nine
+axes with threshold `0.85`, so **a span with no Λ attributes scores 0.90 and passes** —
+this runtime does not fail closed. (The Python collector in `collector/` treats missing
+evidence as 0 and vetoes.) Changing that default is an owner decision; it is disclosed
+here rather than changed.
 
 ## HTTP endpoints
 
@@ -50,15 +56,18 @@ Missing axes default to `0.90` (gate floor).
 |-----|---------|---------|
 | `VSP_PORT` | `3004` | HTTP listen port |
 
-## Upstream dependency
+## Gate dependency
 
-`@szl/ouroboros-lambda-gate` — receipt storage and gate evaluation.
+`@szl/ouroboros-lambda-gate` — receipt storage and gate evaluation, provided in this
+workspace by `stubs/ouroboros-lambda-gate` (in-memory receipt store, weighted-sum gate,
+threshold 0.85). The upstream `ouroboros` repo is archived.
 
 ## Install & test
 
 ```bash
-pnpm install
-pnpm test
+pnpm install          # from the repo root (pnpm workspace)
+pnpm test             # runtime vitest (29 tests) + root gate suite (pnpm test:gates, 49 tests)
+pnpm build            # tsc -> runtime/dist
 # Start server
-VSP_PORT=3004 node dist/server.js
+cd runtime && VSP_PORT=3004 node dist/server.js
 ```

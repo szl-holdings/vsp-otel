@@ -3,7 +3,7 @@ collector/stats.py — online statistics for the vsp-otel collector.
 
   * Welford   — online mean/variance of span latency. Models the sorry-free Lean
                 theorem Lutar.Round11.Welford.welford_mean_exact / weightedMean_increment
-                (lutar-lean open PR #180). Runtime coordinate:
+                (lutar-lean PR #180, merged). Runtime coordinate:
                 szl-holdings/sentra/runtime/welford_gate.py.
   * HyperLogLog — unique-trace cardinality estimation (Flajolet et al. 2007),
                 constant-memory distinct-count over trace ids.
