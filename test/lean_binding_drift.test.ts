@@ -165,3 +165,20 @@ describe("th6DpiSoundnessCheck — property tests (N=100)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Binding-drift guard — scitt_mask_entropy.ts
+// The cited Lean theorem keeps the probability vector unchanged under masking
+// (proved by `simp`); it does not state the per-record bound the gate checks,
+// and that per-record bound is false for field-wise masking. GREEN = fake-green.
+// ---------------------------------------------------------------------------
+
+describe("lean_binding_drift — scitt_mask_entropy.ts", () => {
+  it("@lean_status must NOT be GREEN while the cited theorem does not bind the gate", () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../src/redaction/scitt_mask_entropy.ts"),
+      "utf-8"
+    );
+    expect(src.match(/@lean_status\s+(\S+)/)?.[1]).not.toBe("GREEN");
+  });
+});

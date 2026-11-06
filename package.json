@@ -7,7 +7,8 @@
   },
   "scripts": {
     "build": "pnpm -C runtime build",
-    "test": "pnpm -C runtime test",
+    "test": "pnpm -C runtime test && pnpm run test:gates",
+    "test:gates": "pnpm -C runtime exec vitest run --root .. --config vitest.gates.config.mjs",
     "lint": "eslint runtime/src --ext .ts"
   },
   "devDependencies": {

@@ -1,6 +1,7 @@
 /**
  * Tests for TH6 DPI Soundness Pipeline Check
- * Lean theorem: Lutar.DPI.TH6_DPISoundness.th6_dpi_soundness (GREEN)
+ * Lean theorem: Lutar.DPI.dpi_receipt_chain_entropy_bound (CONDITIONAL — not GREEN; see the
+ * module's @lean_status). "th6_dpi_soundness" is the formula slug, not a theorem.
  *
  * 1000 monotone-decreasing entropy sequences pass; 1000 increasing sequences rejected.
  */
@@ -17,7 +18,7 @@ import {
 // Deterministic cases
 // ---------------------------------------------------------------------------
 
-describe("th6DpiSoundnessCheck — GREEN theorem th6_dpi_soundness", () => {
+describe("th6DpiSoundnessCheck — conditional theorem dpi_receipt_chain_entropy_bound", () => {
   it("monotone-decreasing 3-stage pipeline: sound = true", () => {
     const stages: PipelineStage[] = [
       { name: "raw", entropyBits: 7.5 },
@@ -28,7 +29,7 @@ describe("th6DpiSoundnessCheck — GREEN theorem th6_dpi_soundness", () => {
     expect(r.sound).toBe(true);
     expect(r.violation).toBeUndefined();
     expect(r.receipt.lean_theorem).toBe(
-      "Lutar.DPI.TH6_DPISoundness.th6_dpi_soundness"
+      "Lutar.DPI.dpi_receipt_chain_entropy_bound"
     );
   });
 

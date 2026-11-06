@@ -3,17 +3,27 @@
  *
  * @lean_theorem Lutar.DPI.SCITT.scitt_mask_entropy_bound
  * @lean_file    Lutar/DPI/SCITTMaskEntropy.lean
- * @lean_status  GREEN — axiom-free, no sorry
+ * @lean_status  NOT-BOUND — the cited theorem does not back this gate. Its model keeps the
+ *               probability vector unchanged under masking (`maskedDist.prob := d.prob`), so
+ *               it holds by `simp` with equality, over a distribution of whole statements. It
+ *               says nothing about the per-record value entropy computed here. That
+ *               per-record bound is FALSE for field-wise masking: {id:"1", val:"1"} has
+ *               entropy 0, {id:null, val:"1"} has 1 bit (pinned in
+ *               test/scitt_mask_entropy.test.ts). Earlier revisions marked this GREEN and
+ *               threw "THEOREM VIOLATION" on such valid redactions.
  * @lean_commit  see LEAN_COMMIT_SHA env var; pin at CI time from lutar-lean/lean-toolchain
  *
- * Theorem (Cover–Thomas DPI §2.8, IETF SCITT WG draft-ietf-scitt-architecture):
- *   For any SCITT-compliant mask operation M, H(M(X)) ≤ H(X).
- *   Masking never increases entropy — redaction cannot create new information leakage.
- *
- * Proof sketch: M is a deterministic function of X; by Data Processing Inequality,
- *   I(X; M(X)) ≤ H(X). Since M collapses distinct values to null, marginal entropy
- *   of M(X) ≤ marginal entropy of X. Formalised in Lutar/DPI/SCITTMaskEntropy.lean
- *   via foldl induction on field list (kernel-checked, 0 sorries).
+ * What this gate checks (not a Lean theorem):
+ *   1. Redaction contract: `masked` has exactly the fields of `original`, and every masked
+ *      value is null (redacted) or identical to the original value. Otherwise it throws.
+ *   2. Revealed information never grows: with c_v the count of value v among n values,
+ *      T(values) = Σ_v c_v · log2(n / c_v) bits (= n × empirical entropy). For any
+ *      field-wise redaction, T(unredacted masked values) ≤ T(original values).
+ *      Proof: removing one occurrence of v changes T by g(n) − g(c_v), where
+ *      g(x) = x·log2(x) − (x−1)·log2(x−1) is increasing for x ≥ 1 and n ≥ c_v, so
+ *      T never increases; induct over the redacted fields.
+ *   `originalEntropy` / `maskedEntropy` (nulls as one symbol) are reported as observations
+ *   only: they MAY increase under field-wise masking and are not a guarantee.
  *
  * References:
  *   Cover & Thomas (2006) Elements of Information Theory, 2nd ed. §2.8.1
@@ -29,11 +39,17 @@ import * as crypto from "crypto";
 // ---------------------------------------------------------------------------
 
 export interface ScittMaskResult {
-  /** The Shannon entropy (bits) of the original field distribution */
+  /** Per-record Shannon entropy (bits) of the original field values (observation). */
   originalEntropy: number;
-  /** The Shannon entropy (bits) of the masked field distribution */
+  /** Per-record Shannon entropy (bits) of the masked values, nulls as one symbol.
+   *  Observation only: field-wise masking can make this exceed originalEntropy. */
   maskedEntropy: number;
-  /** True iff maskedEntropy ≤ originalEntropy + ε (theorem guarantee) */
+  /** T(original values) = n × empirical entropy, in bits. */
+  originalInformationBits: number;
+  /** T(unredacted masked values); never exceeds originalInformationBits. */
+  revealedInformationBits: number;
+  /** True iff masked is a field-wise redaction of original and
+   *  revealedInformationBits ≤ originalInformationBits + ε. */
   valid: boolean;
   /** DSSE receipt containing Lean theorem citation and I/O hash */
   receipt: DsseReceipt;
@@ -43,12 +59,16 @@ export interface DsseReceipt {
   formula: string;
   lean_theorem: string;
   lean_file: string;
+  /** Binding status of lean_theorem for this gate (see @lean_status). */
+  lean_status: string;
   lean_commit_sha: string;
   inputs_hash: string;
   output: {
     valid: boolean;
     originalEntropy: number;
     maskedEntropy: number;
+    originalInformationBits: number;
+    revealedInformationBits: number;
   };
   ts: string;
 }
@@ -77,6 +97,14 @@ function shannonEntropy(values: Array<string | null>): number {
   return H;
 }
 
+/**
+ * Total empirical information T = Σ_v c_v · log2(n / c_v) bits (= n × entropy).
+ * Non-increasing when values are removed (see the module docstring).
+ */
+function totalInformationBits(values: string[]): number {
+  return shannonEntropy(values) * values.length;
+}
+
 function sha256Hex(obj: unknown): string {
   return crypto
     .createHash("sha256")
@@ -89,13 +117,14 @@ function sha256Hex(obj: unknown): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Assert the SCITT mask entropy bound: H(masked) ≤ H(original).
+ * Check a SCITT field-wise redaction and measure what it reveals.
  *
  * @param original  Full PII record — field → plaintext value
  * @param masked    Redacted record — field → value | null (null = redacted)
- * @returns ScittMaskResult with entropy measurements and DSSE receipt
+ * @returns ScittMaskResult with entropy observations, revealed-information bound and receipt
  *
- * @throws Error if the field sets of original and masked differ
+ * @throws Error if the field sets differ, or a masked value is neither null nor the
+ *         original value (masked must be derived from original by nulling fields)
  */
 export function scittMaskEntropyGate(
   original: Record<string, string>,
@@ -111,14 +140,26 @@ export function scittMaskEntropyGate(
 
   const originalValues: string[] = origKeys.map((k) => original[k]);
   const maskedValues: Array<string | null> = origKeys.map((k) => masked[k]);
+  for (const k of origKeys) {
+    if (masked[k] !== null && masked[k] !== original[k]) {
+      throw new Error(
+        `scittMaskEntropyGate: field "${k}" is neither redacted (null) nor the original value — ` +
+          `masked must be derived from original by setting fields to null`
+      );
+    }
+  }
 
+  // Observations: nulls are one collapsed symbol. NOT monotone under field-wise masking.
   const originalEntropy = shannonEntropy(originalValues);
-  // Masked entropy: treat nulls as single symbol "_REDACTED"
   const maskedEntropy = shannonEntropy(maskedValues);
 
-  // Theorem guarantee: masking is a deterministic function, entropy non-increasing
+  // Guarantee: information carried by the unredacted values never exceeds the original's.
+  const originalInformationBits = totalInformationBits(originalValues);
+  const revealedInformationBits = totalInformationBits(
+    maskedValues.filter((v): v is string => v !== null)
+  );
   const EPS = 1e-9;
-  const valid = maskedEntropy <= originalEntropy + EPS;
+  const valid = revealedInformationBits <= originalInformationBits + EPS;
 
   const inputs_hash = sha256Hex({ original, masked });
   const lean_commit_sha = process.env["LEAN_COMMIT_SHA"] ?? "unknown";
@@ -127,26 +168,40 @@ export function scittMaskEntropyGate(
     formula: "scitt_mask_entropy_bound",
     lean_theorem: "Lutar.DPI.SCITT.scitt_mask_entropy_bound",
     lean_file: "Lutar/DPI/SCITTMaskEntropy.lean",
+    lean_status: "NOT-BOUND",
     lean_commit_sha,
     inputs_hash,
-    output: { valid, originalEntropy, maskedEntropy },
+    output: {
+      valid,
+      originalEntropy,
+      maskedEntropy,
+      originalInformationBits,
+      revealedInformationBits,
+    },
     ts: new Date().toISOString(),
   };
 
   if (!valid) {
-    // Structural invariant violated — should be unreachable with correct inputs
+    // Unreachable for a field-wise redaction (proved in the module docstring).
     throw new Error(
-      `scittMaskEntropyGate: THEOREM VIOLATION — maskedEntropy=${maskedEntropy} > originalEntropy=${originalEntropy}. ` +
-        `This indicates a bug in the caller: masked must be derived from original by setting fields to null.`
+      `scittMaskEntropyGate: revealed information ${revealedInformationBits} bits exceeds ` +
+        `original ${originalInformationBits} bits — implementation error`
     );
   }
 
-  return { originalEntropy, maskedEntropy, valid, receipt };
+  return {
+    originalEntropy,
+    maskedEntropy,
+    originalInformationBits,
+    revealedInformationBits,
+    valid,
+    receipt,
+  };
 }
 
 /**
  * Batch gate: apply scittMaskEntropyGate to an array of record pairs.
- * Returns the array of results; throws on first theorem violation.
+ * Returns the array of results; throws on the first invalid redaction.
  */
 export function scittMaskEntropyBatch(
   pairs: Array<{
