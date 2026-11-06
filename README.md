@@ -3,7 +3,7 @@
 ## Quickstart
 
 ```bash
-pip install "vsp-otel[fastapi]"   # [fastapi] adds the request auto-instrumentation
+pip install "vsp-otel[fastapi]" fastapi   # [fastapi] adds only the request auto-instrumentation, not FastAPI
 ```
 
 ```python
