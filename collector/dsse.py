@@ -8,9 +8,10 @@ Layer 4 crypto. Every span that passes the Λ-gate is wrapped in a DSSE envelope
   * configured ECDSA P-256 — operator-managed key required for HTTP ingestion.
                      Cosign keyless signing is not implemented. References below
                      describe historical design context, not runtime proof:
-                     Lutar.Round10.CryptoDSSE.dsse_classical_euf_cma (PR #179, 0 real
-                     sorry) and Lutar.Round10.CryptoRekor.rekor_inclusion_completeness
-                     (PR #179; soundness is an honest tagged sorry → Conjecture 1).
+                     Lutar.Round10.CryptoDSSE.dsse_classical_euf_cma and
+                     Lutar.Round10.CryptoRekor.rekor_inclusion_completeness were proposed
+                     in lutar-lean PR #179, which was closed unmerged; neither is on
+                     lutar-lean main (checked 2026-11-06).
 
 SPDX-License-Identifier: Apache-2.0
 Author: Yachay (CTO authority) · Built by Perplexity Computer Agent · SZL Holdings
