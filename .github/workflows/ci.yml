@@ -44,3 +44,5 @@ jobs:
         run: pnpm -C runtime test
       - name: Test root gate modules (src/pipeline, src/redaction, src/sla)
         run: pnpm run test:gates
+      - name: Test bounded exporter properties and HTTP rejection
+        run: pnpm run test:fuzz

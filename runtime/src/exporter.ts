@@ -112,7 +112,8 @@ export function injectAnchorFormula(
 /**
  * Derive axes from an OTel span's attributes.
  * Attributes may include pre-computed axis scores (e.g. from ML inference);
- * missing axes default to 0.90 (floor).
+ * missing axes default to 0.90 (floor). Explicit scores must be finite numbers;
+ * malformed values in either supported alias are rejected, never defaulted.
  *
  * OTel SemConv compliance (PhD-audit 2026-05-29):
  * Attribute names use lowercase_snake_case per OTel semantic conventions
@@ -122,9 +123,21 @@ export function injectAnchorFormula(
  */
 export function axesFromSpan(span: OtelSpan): Axes {
   const get = (snakeKey: string, camelKey: string, def = 0.90): number => {
-    // Prefer snake_case (SemConv-compliant); fall back to camelCase for back-compat
-    const v = span.attributes[`lambda.${snakeKey}`] ?? span.attributes[`lambda.${camelKey}`];
-    return typeof v === "number" ? Math.min(1, Math.max(0, v)) : def;
+    const snake = `lambda.${snakeKey}`;
+    const camel = `lambda.${camelKey}`;
+    // Validate every supplied alias, including an unused legacy alias. A bad
+    // canonical value must not fall through to a valid legacy value or default.
+    for (const key of new Set([snake, camel])) {
+      if (Object.hasOwn(span.attributes, key)) {
+        const value = span.attributes[key];
+        if (typeof value !== "number" || !Number.isFinite(value)) {
+          throw new TypeError(`Axis ${key} must be a finite number`);
+        }
+      }
+    }
+    const key = Object.hasOwn(span.attributes, snake) ? snake : camel;
+    if (!Object.hasOwn(span.attributes, key)) return def;
+    return Math.min(1, Math.max(0, span.attributes[key] as number));
   };
   return {
     moralGrounding:       get("moral_grounding", "moralGrounding"),
@@ -159,7 +172,14 @@ export function signSpan(
   span: OtelSpan,
   anchor?: AnchorFormulaDescriptor,
 ): LambdaSignedSpan {
-  const axes  = axesFromSpan(span);
+  return signSpanWithAxes(span, axesFromSpan(span), anchor);
+}
+
+function signSpanWithAxes(
+  span: OtelSpan,
+  axes: Axes,
+  anchor?: AnchorFormulaDescriptor,
+): LambdaSignedSpan {
   const ev    = evaluateAxes(axes);
   const hash  = spanHash(span);
 
@@ -169,7 +189,9 @@ export function signSpan(
     injectAnchorFormula(span, anchor);
   }
 
-  // Attempt gate transit (stores only if pass=true)
+  // A passing evaluation alone is not receipt admission. Timestamp conversion
+  // or the gate can still refuse the span; report that outcome to the caller.
+  let admitted = false;
   try {
     gateTransit({
       hash,
@@ -180,8 +202,9 @@ export function signSpan(
       doctrineVer: "6",
       meta:        { spanName: span.name, status: span.status },
     });
+    admitted = true;
   } catch {
-    // Gate rejection is recorded in eval; do not throw from exporter
+    // Preserve per-span failure reporting without throwing from the exporter.
   }
 
   return {
@@ -189,7 +212,7 @@ export function signSpan(
     receiptHash: hash,
     lambda:      ev.lambda,
     axes,
-    pass:        ev.pass,
+    pass:        ev.pass && admitted,
   };
 }
 
@@ -205,8 +228,11 @@ export interface ExportResult {
 }
 
 export function exportSpans(spans: OtelSpan[]): ExportResult {
+  // Complete axis validation before any gate writes. HTTP callers receive a
+  // single bad-request response, so a bad later span must not admit a prefix.
+  const prepared = spans.map((span) => ({ span, axes: axesFromSpan(span) }));
   // Do not pass Array.map's numeric index as signSpan's optional anchor.
-  const signed = spans.map((span) => signSpan(span));
+  const signed = prepared.map(({ span, axes }) => signSpanWithAxes(span, axes));
   return {
     total:  signed.length,
     passed: signed.filter((s) => s.pass).length,

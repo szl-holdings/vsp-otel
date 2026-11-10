@@ -24,6 +24,19 @@ lambda.measurability_honesty = 0.95
 ...
 ```
 
+Explicit axis values, including legacy aliases, must be finite numbers. Invalid
+values reject before gate evaluation or receipt storage; neither a default nor
+another alias can conceal them. Finite values still clamp to `[0, 1]`, with
+snake_case preferred when both aliases contain valid numbers. Both batch HTTP
+routes validate every span's axes before storing any receipt, so malformed axes
+return HTTP 400 without admitting a valid prefix. This is axis validation, not
+transactional rollback for arbitrary downstream failures.
+
+A finite passing score alone does not establish receipt admission. If timestamp
+conversion or the gate rejects a span, its returned `pass` is `false` and batch
+counts include it as failed. Such per-span failures retain HTTP 200 responses;
+they do not roll back other successfully admitted spans in that batch.
+
 Missing axes default to `0.90`. The stub gate is a weighted arithmetic mean over nine
 axes with threshold `0.85`, so **a span with no Λ attributes scores 0.90 and passes** —
 this runtime does not fail closed. (The Python collector in `collector/` treats missing
