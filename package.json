@@ -9,6 +9,7 @@
     "build": "pnpm -C runtime build",
     "test": "pnpm -C runtime test && pnpm run test:gates",
     "test:gates": "pnpm -C runtime exec vitest run --root .. --config vitest.gates.config.mjs",
+    "test:fuzz": "pnpm -C runtime build && node --test tests/test_axis_properties.mjs",
     "lint": "eslint runtime/src --ext .ts"
   },
   "devDependencies": {
