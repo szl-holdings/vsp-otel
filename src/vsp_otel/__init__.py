@@ -27,7 +27,7 @@ in the dsse_processor module docstring — read them.
 
 from __future__ import annotations
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 # Doctrine constants (single source of truth, re-exported for tests/diagnostics).
 DOCTRINE = {
