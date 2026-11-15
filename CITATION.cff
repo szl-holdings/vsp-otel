@@ -28,9 +28,9 @@ date-released: "2026-05-31"
 url: "https://github.com/szl-holdings/vsp-otel"
 repository-code: "https://github.com/szl-holdings/vsp-otel"
 identifiers:
-  - description: "vsp-otel Zenodo DOI"
+  - description: "vsp-otel Zenodo DOI (concept - always resolves to the latest version of this archive)"
     type: doi
-    value: "10.5281/zenodo.20424995"
+    value: "10.5281/zenodo.24239895"
   - description: "Ouroboros Thesis concept DOI — always-latest"
     type: doi
     value: "10.5281/zenodo.19944926"
