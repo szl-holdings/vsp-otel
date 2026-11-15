@@ -100,7 +100,7 @@ Runner process-boundary checks remain available with
 Λ-signed OpenTelemetry exporter for SZL audit fibers.
 
 [![tests](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml/badge.svg)](https://github.com/szl-holdings/vsp-otel/actions/workflows/tests.yml)
-&nbsp;Doctrine **v11 LOCKED** · 749 / 14 / 163 · SLSA L1 honest · DOI [10.5281/zenodo.19944926](https://doi.org/10.5281/zenodo.19944926)
+&nbsp;Doctrine **v11 LOCKED** · 749 / 14 / 163 · SLSA L1 honest · DOI [10.5281/zenodo.24239896](https://doi.org/10.5281/zenodo.24239896)
 
 > **📦 Canonical OTel package (Wave D consolidation).** This standalone repository is the
 > **canonical source of truth** for the Λ-signed OTel exporter. The monorepo copy at
