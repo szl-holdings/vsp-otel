@@ -15,7 +15,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "^10.14.0",
-    "@typescript-eslint/parser": "8.72.1",
+    "@typescript-eslint/parser": "8.72.2",
     "globals": "17.14.0",
     "@typescript/native": "npm:typescript@7.0.2",
     "typescript": "npm:@typescript/typescript6@6.0.2"
